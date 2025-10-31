@@ -1,0 +1,1 @@
+# Módulo core - Lógica de negócio pura (sem interface)

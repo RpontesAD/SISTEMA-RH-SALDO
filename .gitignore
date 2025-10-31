@@ -1,0 +1,34 @@
+# Arquivos de configuração sensível
+.env
+.env.local
+.env.production
+.env.development
+
+# Banco de dados
+*.db
+data/
+backups/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+logs/
+
+# Arquivos temporários
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema
+.DS_Store
+Thumbs.db
