@@ -298,20 +298,21 @@ class FeriasService:
         """Obtém informações das férias"""
         try:
             # Buscar diretamente no banco
-            with self.ferias_db.connection.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id, usuario_id, data_inicio, data_fim, dias_utilizados, status FROM ferias WHERE id = %s", (ferias_id,))
-                result = cursor.fetchone()
-                if result:
-                    return {
-                        'id': result[0],
-                        'usuario_id': result[1],
-                        'data_inicio': result[2],
-                        'data_fim': result[3],
-                        'dias_utilizados': result[4],
-                        'status': result[5]
-                    }
-                return None
+            conn = self.ferias_db.connection.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, usuario_id, data_inicio, data_fim, dias_utilizados, status FROM ferias WHERE id = ?", (ferias_id,))
+            result = cursor.fetchone()
+            conn.close()
+            if result:
+                return {
+                    'id': result[0],
+                    'usuario_id': result[1],
+                    'data_inicio': result[2],
+                    'data_fim': result[3],
+                    'dias_utilizados': result[4],
+                    'status': result[5]
+                }
+            return None
         except Exception as e:
             print(f"Erro ao buscar férias ID {ferias_id}: {e}")
             return None
@@ -413,3 +414,27 @@ class FeriasService:
             
         except Exception as e:
             return 0
+    
+    def aprovar_ferias(self, ferias_id: int) -> Dict[str, Any]:
+        """
+        Aprova férias específicas.
+        
+        Args:
+            ferias_id: ID das férias
+            
+        Returns:
+            Dict com resultado da operação
+        """
+        return self.alterar_status_ferias(ferias_id, "Aprovado")
+    
+    def cancelar_ferias(self, ferias_id: int) -> Dict[str, Any]:
+        """
+        Cancela férias específicas.
+        
+        Args:
+            ferias_id: ID das férias
+            
+        Returns:
+            Dict com resultado da operação
+        """
+        return self.alterar_status_ferias(ferias_id, "Rejeitado")

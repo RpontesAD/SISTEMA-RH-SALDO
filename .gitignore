@@ -1,20 +1,4 @@
-# Arquivos de ambiente
-.env
-.env.local
-.env.production
-.env.development
-
-# Banco de dados local
-data/
-*.db
-*.sqlite
-*.sqlite3
-
-# Logs
-logs/
-*.log
-
-# Cache Python
+# Arquivos Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -36,26 +20,38 @@ wheels/
 .installed.cfg
 *.egg
 
+# Ambiente virtual
+venv/
+env/
+ENV/
+
+# Arquivos de configuração local
+.env
+.streamlit/secrets.toml
+
+# Logs
+logs/
+*.log
+
+# Backups
+backups/
+*.backup
+
+# Arquivos temporários
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
 # IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Streamlit
-.streamlit/secrets.toml
-.streamlit/secrets.development.toml
-
-# Backups
-backup_*
-*.backup
-
-# Arquivos temporários
-temp/
-tmp/
-*.tmp
+# Arquivos específicos do projeto
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+!data/.keep

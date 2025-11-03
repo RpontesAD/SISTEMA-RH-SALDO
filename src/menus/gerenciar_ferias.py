@@ -6,6 +6,7 @@ delegando toda a lógica de negócio para a camada de serviços.
 """
 
 import streamlit as st
+import pandas as pd
 from datetime import date
 from ..services.ferias_service import FeriasService
 from ..utils.feedback_usuario import mostrar_saldo_atual_vs_pendente
@@ -286,82 +287,30 @@ def _interface_gerenciar_status(service: FeriasService, user_id: int):
             
             with col1:
                 if st.button("Aprovar", key=f"aprovar_{ferias['id']}", disabled=(ferias['status'] == 'Aprovado')):
-                    conn = st.session_state.ferias_db.connection.get_connection()
-                    cursor = conn.cursor()
-                    try:
-                        cursor.execute("SELECT usuario_id, dias_utilizados, status FROM ferias WHERE id = %s", (ferias['id'],))
-                        ferias_data = cursor.fetchone()
-                        
-                        if ferias_data:
-                            usuario_id, dias_utilizados, status_atual = ferias_data
-                            
-                            if status_atual == 'Aprovado':
-                                st.warning("Férias já estão aprovadas")
-                            else:
-                                cursor.execute("UPDATE ferias SET status = 'Aprovado' WHERE id = %s", (ferias['id'],))
-                                cursor.execute("UPDATE usuarios SET saldo_ferias = saldo_ferias - %s WHERE id = %s", (dias_utilizados, usuario_id))
-                                conn.commit()
-                                st.success("Férias aprovadas com sucesso!")
-                                st.rerun()
-                        else:
-                            st.error("Férias não encontradas")
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-                    finally:
-                        cursor.close()
+                    resultado = service.aprovar_ferias(ferias['id'])
+                    if resultado["sucesso"]:
+                        st.success(resultado["mensagem"])
+                        st.rerun()
+                    else:
+                        st.error(resultado["erro"])
             
             with col2:
                 if st.button("Cancelar", key=f"cancelar_{ferias['id']}", disabled=(ferias['status'] == 'Rejeitado')):
-                    conn = st.session_state.ferias_db.connection.get_connection()
-                    cursor = conn.cursor()
-                    try:
-                        cursor.execute("SELECT usuario_id, dias_utilizados, status FROM ferias WHERE id = %s", (ferias['id'],))
-                        ferias_data = cursor.fetchone()
-                        
-                        if ferias_data:
-                            usuario_id, dias_utilizados, status_atual = ferias_data
-                            
-                            if status_atual == 'Rejeitado':
-                                st.warning("Férias já estão canceladas")
-                            else:
-                                cursor.execute("UPDATE ferias SET status = 'Rejeitado' WHERE id = %s", (ferias['id'],))
-                                
-                                if status_atual == 'Aprovado':
-                                    cursor.execute("UPDATE usuarios SET saldo_ferias = saldo_ferias + %s WHERE id = %s", (dias_utilizados, usuario_id))
-                                
-                                conn.commit()
-                                st.success("Férias canceladas com sucesso!")
-                                st.rerun()
-                        else:
-                            st.error("Férias não encontradas")
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-                    finally:
-                        cursor.close()
+                    resultado = service.cancelar_ferias(ferias['id'])
+                    if resultado["sucesso"]:
+                        st.success(resultado["mensagem"])
+                        st.rerun()
+                    else:
+                        st.error(resultado["erro"])
             
             with col3:
                 if st.button("Excluir", key=f"excluir_{ferias['id']}", type="secondary"):
-                    with st.session_state.ferias_db.connection.get_connection() as conn:
-                        cursor = conn.cursor()
-                        try:
-                            cursor.execute("SELECT usuario_id, dias_utilizados, status FROM ferias WHERE id = %s", (ferias['id'],))
-                            ferias_data = cursor.fetchone()
-                            
-                            if ferias_data:
-                                usuario_id, dias_utilizados, status = ferias_data
-                                
-                                cursor.execute("DELETE FROM ferias WHERE id = %s", (ferias['id'],))
-                                
-                                if status == 'Aprovado':
-                                    cursor.execute("UPDATE usuarios SET saldo_ferias = saldo_ferias + %s WHERE id = %s", (dias_utilizados, usuario_id))
-                                
-                                conn.commit()
-                                st.success("Férias excluídas com sucesso!")
-                                st.rerun()
-                            else:
-                                st.error("Férias não encontradas")
-                        except Exception as e:
-                            st.error(f"Erro: {str(e)}")
+                    resultado = service.excluir_ferias(ferias['id'])
+                    if resultado["sucesso"]:
+                        st.success(resultado["mensagem"])
+                        st.rerun()
+                    else:
+                        st.error(resultado["erro"])
                         
     # Legenda de cores
     st.markdown("##### Legenda de Status:")
@@ -379,7 +328,7 @@ def _obter_datas_ocupadas(user_id):
     try:
         conn = st.session_state.ferias_db.connection.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT data_inicio, data_fim FROM ferias WHERE usuario_id = %s AND status = 'Aprovado'", (user_id,))
+        cursor.execute("SELECT data_inicio, data_fim FROM ferias WHERE usuario_id = ? AND status = 'Aprovado'", (user_id,))
         resultados = cursor.fetchall()
         cursor.close()
         

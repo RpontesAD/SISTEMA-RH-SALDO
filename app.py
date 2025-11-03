@@ -23,13 +23,15 @@ try:
 except ImportError:
     try:
         from src.config_secure import (
-            APP_TITLE, PAGE_LAYOUT, USE_MYSQL,
-            MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+            APP_TITLE, PAGE_LAYOUT, USE_MYSQL
         )
+        if USE_MYSQL:
+            from src.config_secure import MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+        else:
+            from src.config_secure import SQLITE_PATH
     except ImportError:
         from src.config import (
-            APP_TITLE, PAGE_LAYOUT, USE_MYSQL,
-            MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+            APP_TITLE, PAGE_LAYOUT, USE_MYSQL, SQLITE_PATH
         )
 
 # Configurar página e localização
@@ -50,28 +52,35 @@ except:
 # Inicializar banco de dados
 if "db_conn" not in st.session_state:
     try:
-        # Usar apenas MySQL
-        try:
-            from codigo.banco_dados.mysql_database import MySQLDatabase
-        except ImportError:
-            from src.database.mysql_database import MySQLDatabase
-        
-        st.session_state.db = MySQLDatabase(
-            MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
-        )
+        if USE_MYSQL:
+            # Usar MySQL
+            try:
+                from codigo.banco_dados.mysql_database import MySQLDatabase
+            except ImportError:
+                from src.database.mysql_database import MySQLDatabase
+            
+            st.session_state.db = MySQLDatabase(
+                MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+            )
+            st.success("💾 MySQL conectado com sucesso!")
+        else:
+            # Usar SQLite
+            try:
+                from codigo.banco_dados.sqlite_database import SQLiteDatabase
+            except ImportError:
+                from src.database.sqlite_database import SQLiteDatabase
+            
+            sqlite_path = SQLITE_PATH if 'SQLITE_PATH' in globals() else 'data/rpontes_rh.db'
+            st.session_state.db = SQLiteDatabase(sqlite_path)
         
         # Criar interfaces compatíveis
         st.session_state.users_db = st.session_state.db
         st.session_state.ferias_db = st.session_state.db
         st.session_state.db_conn = st.session_state.db.connection
-        
-
-        st.success("💾 MySQL conectado com sucesso!")
             
     except Exception as e:
-
-        st.error(f"Erro ao inicializar banco de dados MySQL: {e}")
-        st.write(f"Configuração MySQL: {MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
+        st.error(f"Erro ao inicializar banco de dados: {e}")
+        st.write(f"Tipo de banco: {'MySQL' if USE_MYSQL else 'SQLite'}")
         st.write(f"Diretório atual: {os.getcwd()}")
         st.stop()
 

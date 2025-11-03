@@ -1,6 +1,10 @@
 # Constantes movidas para utils/constants.py
 from .utils.constants import SETORES, FUNCOES, NIVEIS_ACESSO, DIAS_FERIAS_PADRAO, SALDO_MINIMO, SALDO_MAXIMO
 
+# Forçar SQLite
+USE_MYSQL = False
+SQLITE_PATH = "data/rpontes_rh.db"
+
 APP_TITLE = "RPONTES - Sistema RH"
 PAGE_LAYOUT = "wide"
 
@@ -14,10 +18,6 @@ CONSIDERAR_FERIADOS = True
 # AVISO: Este arquivo contém configurações legadas
 # Use config_secure.py para configurações com variáveis de ambiente
 
-# Configurações MySQL - Sempre usar MySQL
-USE_MYSQL = True  # Sistema usa apenas MySQL
-MYSQL_HOST = "localhost"  # Será sobrescrito por variável de ambiente
-MYSQL_PORT = 3306
-MYSQL_DATABASE = "sistema_ferias_rh"
-MYSQL_USER = "root"  # Será sobrescrito por variável de ambiente
-MYSQL_PASSWORD = ""  # OBRIGATÓRIO - use variável de ambiente MYSQL_PASSWORD
+# Forçar SQLite - NÃO usar MySQL
+USE_MYSQL = False  # Sistema usa SQLite
+SQLITE_PATH = "data/rpontes_rh.db"

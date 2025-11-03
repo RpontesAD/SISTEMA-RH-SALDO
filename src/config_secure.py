@@ -61,13 +61,16 @@ STATUS_FERIAS = {
 
 STATUS_FERIAS_OPTIONS = list(STATUS_FERIAS.values())
 
-# Configurações seguras do banco de dados
-# Detectar se está rodando no Streamlit Cloud
+# Configurações do banco de dados
+# Prioridade: SQLite > Streamlit Secrets > Variáveis de Ambiente
 try:
     import streamlit as st
-    # Tentar usar secrets do Streamlit Cloud
     try:
-        if 'mysql' in st.secrets:
+        # Verificar se deve usar SQLite
+        if st.secrets.get("mysql", {}).get("use_sqlite", False):
+            USE_MYSQL = False
+            SQLITE_PATH = st.secrets["mysql"].get("sqlite_path", "data/rpontes_rh.db")
+        elif 'mysql' in st.secrets and 'host' in st.secrets["mysql"]:
             USE_MYSQL = True
             MYSQL_HOST = st.secrets["mysql"]["host"]
             MYSQL_PORT = int(st.secrets["mysql"]["port"])
@@ -75,23 +78,15 @@ try:
             MYSQL_USER = st.secrets["mysql"]["user"]
             MYSQL_PASSWORD = st.secrets["mysql"]["password"]
         else:
-            raise KeyError("mysql not in secrets")
+            raise KeyError("No database config in secrets")
     except (KeyError, FileNotFoundError, Exception):
-        # Fallback para variáveis de ambiente
-        USE_MYSQL = os.getenv("USE_MYSQL", "False").lower() == "true"
-        MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-        MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
-        MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "sistema_ferias_rh")
-        MYSQL_USER = os.getenv("MYSQL_USER", "root")
-        MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+        # Forçar SQLite sempre
+        USE_MYSQL = False
+        SQLITE_PATH = "data/rpontes_rh.db"
 except ImportError:
-    # Fallback se streamlit não estiver disponível
-    USE_MYSQL = os.getenv("USE_MYSQL", "False").lower() == "true"
-    MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-    MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
-    MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "sistema_ferias_rh")
-    MYSQL_USER = os.getenv("MYSQL_USER", "root")
-    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+    # Forçar SQLite sempre
+    USE_MYSQL = False
+    SQLITE_PATH = "data/rpontes_rh.db"
 
 # Configurações de segurança
 try:

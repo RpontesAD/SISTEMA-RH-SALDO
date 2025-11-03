@@ -1,0 +1,2 @@
+# Este arquivo garante que o diretório data seja incluído no Git
+# O banco SQLite será criado automaticamente na primeira execução
