@@ -7,7 +7,8 @@ Esta camada separa a lógica de negócio da interface para operações de colabo
 from typing import Dict, Any
 from datetime import date
 from ..core.regras_saldo import RegrasSaldo
-from ..utils.validacoes import validar_email, validar_senha, validar_nome
+from ..utils.validators import validar_email, validar_senha, validar_nome
+from ..utils.constants import DIAS_FERIAS_PADRAO
 from ..utils.code_standards import (
     Usuario, ResultadoOperacao, ValidacaoResult, Constantes, 
     Validadores, NivelAcesso, UsuarioFactory, documentar_operacao
@@ -50,28 +51,29 @@ class ColaboradoresService:
         Returns:
             Dict com resultado da validação
         """
-        # Validar nome usando padrões
-        if len(nome.strip()) < Constantes.TAMANHO_MINIMO_NOME:
+        # Validar nome usando validadores centralizados
+        nome_valido, nome_msg = validar_nome(nome)
+        if not nome_valido:
             return {
                 "valido": False,
-                "erro": f"Nome deve ter pelo menos {Constantes.TAMANHO_MINIMO_NOME} caracteres",
+                "erro": nome_msg,
                 "campo": "nome"
             }
         
-        # Validar email usando validadores padronizados
-        if not Validadores.validar_email(email):
+        # Validar email usando validadores centralizados
+        if not validar_email(email):
             return {
                 "valido": False,
                 "erro": "Email inválido",
                 "campo": "email"
             }
         
-        # Validar senha usando validadores padronizados
-        validacao_senha = Validadores.validar_senha(senha)
-        if not validacao_senha.valido:
+        # Validar senha usando validadores centralizados
+        senha_valida, senha_msg = validar_senha(senha)
+        if not senha_valida:
             return {
                 "valido": False,
-                "erro": validacao_senha.mensagem,
+                "erro": senha_msg,
                 "campo": "senha"
             }
         
@@ -136,7 +138,7 @@ class ColaboradoresService:
             }
         
         # Usar saldo corrigido ou padrão
-        saldo_final = validacao.get("saldo_corrigido", saldo_ferias or Constantes.DIAS_FERIAS_PADRAO)
+        saldo_final = validacao.get("saldo_corrigido", saldo_ferias or DIAS_FERIAS_PADRAO)
         
         # Cadastrar no banco
         try:

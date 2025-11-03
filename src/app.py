@@ -2,7 +2,8 @@ import streamlit as st
 from .config import (
     APP_TITLE,
     PAGE_LAYOUT,
-)  
+)
+from .utils.constants import SETORES, FUNCOES, NIVEIS_ACESSO  
 from .utils.ui_components import create_header  
 from .auth import login_page  
 from .menus import menu_rh, menu_diretoria, menu_coordenador, menu_colaborador

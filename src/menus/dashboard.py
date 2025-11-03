@@ -40,7 +40,7 @@ def _mostrar_metricas_gerais():
             return
         
         # Filtro por setor - usar constantes como base
-        from ..core.constantes import SETORES
+        from ..utils.constants import SETORES
         setores_banco = users_df['setor'].unique().tolist()
         setores_disponiveis = ['Todos'] + SETORES
         setor_selecionado = st.selectbox("Filtrar por Setor:", setores_disponiveis)
@@ -72,7 +72,7 @@ def _mostrar_metricas_gerais():
             st.markdown("##### Distribuição por Setor")
             
             # Criar estatísticas para todos os setores das constantes
-            from ..core.constantes import SETORES
+            from ..utils.constants import SETORES
             setor_data = []
             
             for setor in SETORES:

@@ -8,7 +8,7 @@ delegando toda a lógica de negócio para a camada de serviços.
 import streamlit as st
 from datetime import date
 from ..services.colaboradores_service import ColaboradoresService
-from ..config import SETORES, FUNCOES
+from ..utils.constants import SETORES, FUNCOES
 from ..utils.input_validation import safe_text_input, safe_selectbox, validate_form_data
 from ..utils.error_handler import safe_execute, log_operation
 
@@ -43,7 +43,7 @@ def menu_cadastro_colaborador():
             nome = st.text_input("Nome Completo*", max_chars=100, key="nome_cadastro")
             email = st.text_input("Email*", max_chars=100, key="email_cadastro")
             setor = st.selectbox("Setor*", SETORES, key="setor_cadastro")
-            saldo_ferias = st.number_input("Saldo Inicial de Férias", min_value=0, max_value=30, value=30, help="Padrão: 30 dias", key="saldo_cadastro")
+            saldo_ferias = st.number_input("Saldo Inicial de Férias", min_value=0, max_value=30, value=12, help="Padrão: 12 dias", key="saldo_cadastro")
             
         with col2:
             senha = st.text_input("Senha*", type="password", help="Mínimo 6 caracteres", max_chars=50, key="senha_cadastro")

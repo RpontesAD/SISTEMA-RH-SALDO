@@ -7,6 +7,7 @@ sem dependências de interface ou banco de dados.
 
 from datetime import date, timedelta
 from typing import Dict, Any, Tuple, Optional
+from ..utils.constants import DIAS_ANTECEDENCIA_MINIMA, SALDO_MAXIMO, DIAS_FERIAS_PADRAO, SALDO_MINIMO
 
 
 class RegrasFerias:
@@ -17,12 +18,9 @@ class RegrasFerias:
     separados da interface e do acesso a dados.
     """
     
-    # Constantes das regras de negócio
-    DIAS_ANTECEDENCIA_MINIMA = 7
-    PERIODO_MAXIMO_DIAS = 30
-    SALDO_PADRAO = 12
-    SALDO_MINIMO = 0
-    SALDO_MAXIMO = 30
+    # Constantes importadas do módulo constants
+    PERIODO_MAXIMO_DIAS = SALDO_MAXIMO
+    SALDO_PADRAO = DIAS_FERIAS_PADRAO
     
     @classmethod
     def validar_antecedencia(cls, data_inicio: date, usuario_nivel: str = "colaborador") -> Dict[str, Any]:
@@ -49,13 +47,13 @@ class RegrasFerias:
             }
         
         # Validar antecedência para outros usuários
-        valida = dias_antecedencia >= cls.DIAS_ANTECEDENCIA_MINIMA
+        valida = dias_antecedencia >= DIAS_ANTECEDENCIA_MINIMA
         
         return {
             "valida": valida,
             "dias_antecedencia": dias_antecedencia,
             "eh_rh": False,
-            "mensagem": f"Antecedência mínima: {cls.DIAS_ANTECEDENCIA_MINIMA} dias" if not valida else ""
+            "mensagem": f"Antecedência mínima: {DIAS_ANTECEDENCIA_MINIMA} dias" if not valida else ""
         }
     
     @classmethod
@@ -78,10 +76,10 @@ class RegrasFerias:
         
         dias_totais = (data_fim - data_inicio).days + 1
         
-        if dias_totais > cls.PERIODO_MAXIMO_DIAS:
+        if dias_totais > SALDO_MAXIMO:
             return {
                 "valida": False,
-                "mensagem": f"Período não pode exceder {cls.PERIODO_MAXIMO_DIAS} dias"
+                "mensagem": f"Período não pode exceder {SALDO_MAXIMO} dias"
             }
         
         return {
@@ -166,10 +164,10 @@ class RegrasFerias:
         if status_atual == "Aprovada" and novo_status in ["Pendente", "Cancelada", "Rejeitada"]:
             novo_saldo = saldo_atual + dias_utilizados
             
-            if novo_saldo > cls.SALDO_MAXIMO:
+            if novo_saldo > SALDO_MAXIMO:
                 return {
                     "altera_saldo": False,
-                    "erro": f"Operação resultaria em saldo acima do máximo ({cls.SALDO_MAXIMO})"
+                    "erro": f"Operação resultaria em saldo acima do máximo ({SALDO_MAXIMO})"
                 }
             
             return {

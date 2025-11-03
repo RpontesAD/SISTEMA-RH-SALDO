@@ -87,22 +87,7 @@ class Constantes:
 
 # Utilitários para validação
 class Validadores:
-    @staticmethod
-    def validar_email(email: str) -> bool:
-        """Valida formato de email"""
-        import re
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        return bool(re.match(pattern, email))
-    
-    @staticmethod
-    def validar_senha(senha: str) -> ValidacaoResult:
-        """Valida força da senha"""
-        if len(senha) < Constantes.TAMANHO_MINIMO_SENHA:
-            return ValidacaoResult(
-                valido=False,
-                mensagem=f"Senha deve ter pelo menos {Constantes.TAMANHO_MINIMO_SENHA} caracteres"
-            )
-        return ValidacaoResult(valido=True, mensagem="Senha válida")
+    # Validadores movidos para utils/validators.py
     
     @staticmethod
     def validar_saldo(saldo: int) -> ValidacaoResult:
@@ -157,29 +142,8 @@ def documentar_operacao(operacao: str, descricao: str):
 
 # Utilitários para formatação
 class Formatadores:
-    @staticmethod
-    def formatar_data_brasileira(data_str: str) -> str:
-        """Converte data para formato brasileiro"""
-        from datetime import datetime
-        try:
-            data = datetime.strptime(data_str, '%Y-%m-%d')
-            return data.strftime('%d/%m/%Y')
-        except:
-            return data_str
-    
-    @staticmethod
-    def formatar_periodo_ferias(data_inicio: str, data_fim: str) -> str:
-        """Formata período de férias"""
-        inicio = Formatadores.formatar_data_brasileira(data_inicio)
-        fim = Formatadores.formatar_data_brasileira(data_fim)
-        return f"{inicio} a {fim}"
-    
-    @staticmethod
-    def formatar_saldo_ferias(saldo: int) -> str:
-        """Formata saldo de férias"""
-        if saldo == 1:
-            return "1 dia"
-        return f"{saldo} dias"
+    # Formatadores movidos para utils/formatters.py
+    pass
 
 # Builder pattern para queries complexas
 class QueryBuilder:

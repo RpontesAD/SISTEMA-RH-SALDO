@@ -6,6 +6,7 @@ sem dependências de interface ou banco de dados.
 """
 
 from typing import Dict, Any
+from ..utils.constants import DIAS_FERIAS_PADRAO as SALDO_PADRAO, SALDO_MINIMO, SALDO_MAXIMO
 
 
 class RegrasSaldo:
@@ -15,11 +16,6 @@ class RegrasSaldo:
     Centraliza toda a lógica de validação e cálculo de saldos,
     garantindo consistência em todo o sistema.
     """
-    
-    # Constantes das regras de saldo
-    SALDO_PADRAO = 12  # Valor padrão personalizável
-    SALDO_MINIMO = 0
-    SALDO_MAXIMO = 30  # Período máximo de 30 dias
     
     @classmethod
     def validar_saldo_dentro_limites(cls, saldo: int) -> Dict[str, Any]:
@@ -32,20 +28,20 @@ class RegrasSaldo:
         Returns:
             Dict com resultado da validação
         """
-        if saldo < cls.SALDO_MINIMO:
+        if saldo < SALDO_MINIMO:
             return {
                 "valido": False,
                 "motivo": "saldo_abaixo_minimo",
-                "saldo_corrigido": cls.SALDO_MINIMO,
-                "mensagem": f"Saldo abaixo do mínimo ({cls.SALDO_MINIMO})"
+                "saldo_corrigido": SALDO_MINIMO,
+                "mensagem": f"Saldo abaixo do mínimo ({SALDO_MINIMO})"
             }
         
-        if saldo > cls.SALDO_MAXIMO:
+        if saldo > SALDO_MAXIMO:
             return {
                 "valido": False,
                 "motivo": "saldo_acima_maximo", 
-                "saldo_corrigido": cls.SALDO_MAXIMO,
-                "mensagem": f"Saldo acima do máximo ({cls.SALDO_MAXIMO})"
+                "saldo_corrigido": SALDO_MAXIMO,
+                "mensagem": f"Saldo acima do máximo ({SALDO_MAXIMO})"
             }
         
         return {
@@ -66,10 +62,10 @@ class RegrasSaldo:
             Saldo teórico calculado
         """
         total_usado = sum(ferias.get("dias_utilizados", 0) for ferias in ferias_aprovadas)
-        saldo_teorico = cls.SALDO_PADRAO - total_usado
+        saldo_teorico = SALDO_PADRAO - total_usado
         
         # Garantir que não seja negativo
-        return max(cls.SALDO_MINIMO, saldo_teorico)
+        return max(SALDO_MINIMO, saldo_teorico)
     
     @classmethod
     def detectar_inconsistencia_saldo(cls, saldo_atual: int, ferias_aprovadas: list) -> Dict[str, Any]:
@@ -117,7 +113,7 @@ class RegrasSaldo:
             Dict com cálculos de saldo
         """
         dias_pendentes = sum(ferias.get("dias_utilizados", 0) for ferias in ferias_pendentes)
-        saldo_se_aprovadas = max(cls.SALDO_MINIMO, saldo_atual - dias_pendentes)
+        saldo_se_aprovadas = max(SALDO_MINIMO, saldo_atual - dias_pendentes)
         
         return {
             "saldo_atual": saldo_atual,
@@ -152,7 +148,7 @@ class RegrasSaldo:
                 "motivo": f"Operação inválida: {operacao}"
             }
         
-        validacao = cls.validar_saldo_dentro_limites(novo_saldo)
+        validacao = RegrasSaldo.validar_saldo_dentro_limites(novo_saldo)
         
         if not validacao["valido"]:
             return {
