@@ -8,6 +8,9 @@ from typing import Any, Callable, Dict, Optional, Tuple, List
 from datetime import datetime
 
 # Configurar logging
+import os
+os.makedirs('logs', exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
