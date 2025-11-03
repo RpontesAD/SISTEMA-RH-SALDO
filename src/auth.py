@@ -33,4 +33,4 @@ def login_page():
                     else:
                         st.error("Email ou senha incorretos!")
 
-        st.info("**Acesso padrão:** admin@rpontes.com / admin123")
+
