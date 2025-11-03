@@ -62,17 +62,55 @@ STATUS_FERIAS = {
 STATUS_FERIAS_OPTIONS = list(STATUS_FERIAS.values())
 
 # Configurações seguras do banco de dados
-USE_MYSQL = os.getenv("USE_MYSQL", "False").lower() == "true"
-MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "sistema_ferias_rh")
-MYSQL_USER = os.getenv("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+# Detectar se está rodando no Streamlit Cloud
+try:
+    import streamlit as st
+    # Tentar usar secrets do Streamlit Cloud
+    try:
+        if 'mysql' in st.secrets:
+            USE_MYSQL = True
+            MYSQL_HOST = st.secrets["mysql"]["host"]
+            MYSQL_PORT = int(st.secrets["mysql"]["port"])
+            MYSQL_DATABASE = st.secrets["mysql"]["database"]
+            MYSQL_USER = st.secrets["mysql"]["user"]
+            MYSQL_PASSWORD = st.secrets["mysql"]["password"]
+        else:
+            raise KeyError("mysql not in secrets")
+    except (KeyError, FileNotFoundError, Exception):
+        # Fallback para variáveis de ambiente
+        USE_MYSQL = os.getenv("USE_MYSQL", "False").lower() == "true"
+        MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+        MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+        MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "sistema_ferias_rh")
+        MYSQL_USER = os.getenv("MYSQL_USER", "root")
+        MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+except ImportError:
+    # Fallback se streamlit não estiver disponível
+    USE_MYSQL = os.getenv("USE_MYSQL", "False").lower() == "true"
+    MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+    MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+    MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "sistema_ferias_rh")
+    MYSQL_USER = os.getenv("MYSQL_USER", "root")
+    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 
 # Configurações de segurança
-SECRET_KEY = os.getenv("SECRET_KEY", "chave-padrao-insegura")
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@rpontes.com")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+try:
+    import streamlit as st
+    try:
+        if 'app' in st.secrets:
+            SECRET_KEY = st.secrets["app"]["secret_key"]
+            ADMIN_EMAIL = st.secrets["app"]["admin_email"]
+            ADMIN_PASSWORD = st.secrets["app"]["admin_password"]
+        else:
+            raise KeyError("app not in secrets")
+    except (KeyError, FileNotFoundError, Exception):
+        SECRET_KEY = os.getenv("SECRET_KEY", "chave-padrao-insegura")
+        ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@rpontes.com")
+        ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+except ImportError:
+    SECRET_KEY = os.getenv("SECRET_KEY", "chave-padrao-insegura")
+    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@rpontes.com")
+    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
 # Validação de configurações críticas
 def validate_config():

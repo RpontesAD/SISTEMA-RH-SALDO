@@ -16,8 +16,8 @@ CONSIDERAR_FERIADOS = True
 
 # Configurações MySQL - Sempre usar MySQL
 USE_MYSQL = True  # Sistema usa apenas MySQL
-MYSQL_HOST = "localhost"
+MYSQL_HOST = "localhost"  # Será sobrescrito por variável de ambiente
 MYSQL_PORT = 3306
 MYSQL_DATABASE = "sistema_ferias_rh"
-MYSQL_USER = "root"
-MYSQL_PASSWORD = ""  # REMOVIDO - use variável de ambiente MYSQL_PASSWORD
+MYSQL_USER = "root"  # Será sobrescrito por variável de ambiente
+MYSQL_PASSWORD = ""  # OBRIGATÓRIO - use variável de ambiente MYSQL_PASSWORD

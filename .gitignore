@@ -1,34 +1,61 @@
-# Arquivos de configuração sensível
+# Arquivos de ambiente
 .env
 .env.local
 .env.production
 .env.development
 
-# Banco de dados
-*.db
+# Banco de dados local
 data/
-backups/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
 
 # Cache Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Logs
-*.log
-logs/
-
-# Arquivos temporários
-*.tmp
-*.temp
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Sistema
+# OS
 .DS_Store
 Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/secrets.development.toml
+
+# Backups
+backup_*
+*.backup
+
+# Arquivos temporários
+temp/
+tmp/
+*.tmp

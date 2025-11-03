@@ -30,7 +30,7 @@ def menu_cadastro_colaborador():
     
     # Limpar formulário se foi solicitado
     if st.session_state.get('clear_form', False):
-        for key in ['nome_cadastro', 'email_cadastro', 'senha_cadastro', 'setor_cadastro', 'funcao_cadastro', 'nivel_cadastro', 'saldo_cadastro', 'data_cadastro']:
+        for key in ['nome_cadastro', 'email_cadastro', 'senha_cadastro', 'confirmar_senha_cadastro', 'setor_cadastro', 'funcao_cadastro', 'nivel_cadastro', 'saldo_cadastro', 'data_cadastro']:
             if key in st.session_state:
                 del st.session_state[key]
         st.session_state.clear_form = False
@@ -47,6 +47,7 @@ def menu_cadastro_colaborador():
             
         with col2:
             senha = st.text_input("Senha*", type="password", help="Mínimo 6 caracteres", max_chars=50, key="senha_cadastro")
+            confirmar_senha = st.text_input("Confirmar Senha*", type="password", help="Digite a senha novamente", max_chars=50, key="confirmar_senha_cadastro")
             funcao = st.selectbox("Função*", FUNCOES, key="funcao_cadastro")
             nivel_acesso = st.selectbox("Nível de Acesso*", ["colaborador", "coordenador", "diretoria", "master"], key="nivel_cadastro")
             data_admissao = st.date_input("Data de Admissão", value=date.today(), format="DD/MM/YYYY", key="data_cadastro")
@@ -54,10 +55,10 @@ def menu_cadastro_colaborador():
         submitted = st.form_submit_button("Cadastrar Colaborador", type="primary")
         
         if submitted:
-            _processar_cadastro(service, nome, email, senha, setor, funcao, nivel_acesso, saldo_ferias, data_admissao)
+            _processar_cadastro(service, nome, email, senha, confirmar_senha, setor, funcao, nivel_acesso, saldo_ferias, data_admissao)
 
 
-def _processar_cadastro(service: ColaboradoresService, nome: str, email: str, senha: str,
+def _processar_cadastro(service: ColaboradoresService, nome: str, email: str, senha: str, confirmar_senha: str,
                        setor: str, funcao: str, nivel_acesso: str, saldo_ferias: int, data_admissao: date):
     """
     Processa o cadastro usando o serviço.
@@ -73,8 +74,13 @@ def _processar_cadastro(service: ColaboradoresService, nome: str, email: str, se
         data_admissao: Data de admissão
     """
     # Validar campos obrigatórios na interface
-    if not all([nome, email, senha, setor, funcao, nivel_acesso]):
+    if not all([nome, email, senha, confirmar_senha, setor, funcao, nivel_acesso]):
         st.error("❌ Todos os campos obrigatórios devem ser preenchidos")
+        return
+    
+    # Validar confirmação de senha
+    if senha != confirmar_senha:
+        st.error("❌ As senhas não coincidem")
         return
     
     # Log da operação
@@ -108,8 +114,6 @@ def _processar_cadastro(service: ColaboradoresService, nome: str, email: str, se
         
         # Limpar campos apenas em caso de sucesso
         st.session_state.clear_form = True
-        import time
-        time.sleep(1)
         st.rerun()
     elif sucesso and resultado:
         _exibir_erro_cadastro(resultado)
