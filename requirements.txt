@@ -2,3 +2,5 @@ streamlit
 pandas
 bcrypt
 python-dotenv
+psycopg2-binary
+sqlalchemy

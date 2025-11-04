@@ -102,9 +102,10 @@ streamlit run app.py
 
 - **Frontend:** Streamlit
 - **Backend:** Python 3.8+
-- **Banco de Dados:** SQLite
+- **Banco de Dados:** Google Sheets (persistente)
 - **Criptografia:** bcrypt
 - **Análise de Dados:** Pandas
+- **API:** Google Sheets API
 
 ## 📁 Estrutura do Projeto
 
@@ -142,10 +143,11 @@ streamlit run app.py --server.port 8502
 ```
 
 ### Problemas de Banco
-O sistema usa SQLite por padrão. Se houver problemas:
-1. Verifique se a pasta `data/` existe
-2. Execute o sistema - o banco será criado automaticamente
-3. Use as credenciais padrão: admin@rpontes.com / admin123
+O sistema usa Google Sheets como banco persistente. Se houver problemas:
+1. Verifique se as credenciais do Google Cloud estão configuradas
+2. Confirme se a planilha foi compartilhada com o service account
+3. Consulte o guia GOOGLE_SHEETS_SETUP.md
+4. Use as credenciais padrão: admin@rpontes.com / admin123
 
 ## 📊 Status do Sistema
 

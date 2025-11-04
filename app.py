@@ -23,12 +23,16 @@ try:
 except ImportError:
     try:
         from src.config_secure import (
-            APP_TITLE, PAGE_LAYOUT, USE_MYSQL
+            APP_TITLE, PAGE_LAYOUT, get_database_config
         )
-        if USE_MYSQL:
-            from src.config_secure import MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+        config = get_database_config()
+        
+        if config["type"] == "mysql":
+            from src.config_secure import USE_MYSQL, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+        elif config["type"] == "sheets":
+            from src.config_secure import USE_SHEETS
         else:
-            from src.config_secure import SQLITE_PATH
+            from src.config_secure import USE_MYSQL, SQLITE_PATH
     except ImportError:
         from src.config import (
             APP_TITLE, PAGE_LAYOUT, USE_MYSQL, SQLITE_PATH
@@ -52,7 +56,15 @@ except:
 # Inicializar banco de dados
 if "db_conn" not in st.session_state:
     try:
-        if USE_MYSQL:
+        # Verificar tipo de banco
+        config = get_database_config()
+        
+        if config["type"] == "sheets":
+            # Usar SimpleDatabase (PostgreSQL)
+            from src.database.simple_database import SimpleDatabase
+            st.session_state.db = SimpleDatabase()
+            
+        elif config["type"] == "mysql":
             # Usar MySQL
             try:
                 from codigo.banco_dados.mysql_database import MySQLDatabase
@@ -62,7 +74,7 @@ if "db_conn" not in st.session_state:
             st.session_state.db = MySQLDatabase(
                 MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
             )
-            st.success("💾 MySQL conectado com sucesso!")
+            
         else:
             # Usar SQLite
             try:
@@ -80,7 +92,7 @@ if "db_conn" not in st.session_state:
             
     except Exception as e:
         st.error(f"Erro ao inicializar banco de dados: {e}")
-        st.write(f"Tipo de banco: {'MySQL' if USE_MYSQL else 'SQLite'}")
+        st.write(f"Tipo de banco: {config.get('type', 'desconhecido')}")
         st.write(f"Diretório atual: {os.getcwd()}")
         st.stop()
 

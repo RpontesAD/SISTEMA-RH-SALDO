@@ -62,15 +62,20 @@ STATUS_FERIAS = {
 STATUS_FERIAS_OPTIONS = list(STATUS_FERIAS.values())
 
 # Configurações do banco de dados
-# Prioridade: SQLite > Streamlit Secrets > Variáveis de Ambiente
+# Prioridade: Google Sheets > SQLite > MySQL
 try:
     import streamlit as st
     try:
-        # Verificar se deve usar SQLite
-        if st.secrets.get("mysql", {}).get("use_sqlite", False):
+        # Verificar se deve usar Google Sheets
+        if 'gcp_service_account' in st.secrets:
+            USE_SHEETS = True
+            USE_MYSQL = False
+        elif st.secrets.get("mysql", {}).get("use_sqlite", False):
+            USE_SHEETS = False
             USE_MYSQL = False
             SQLITE_PATH = st.secrets["mysql"].get("sqlite_path", "data/rpontes_rh.db")
         elif 'mysql' in st.secrets and 'host' in st.secrets["mysql"]:
+            USE_SHEETS = False
             USE_MYSQL = True
             MYSQL_HOST = st.secrets["mysql"]["host"]
             MYSQL_PORT = int(st.secrets["mysql"]["port"])
@@ -80,11 +85,13 @@ try:
         else:
             raise KeyError("No database config in secrets")
     except (KeyError, FileNotFoundError, Exception):
-        # Forçar SQLite sempre
+        # Fallback para SQLite
+        USE_SHEETS = False
         USE_MYSQL = False
         SQLITE_PATH = "data/rpontes_rh.db"
 except ImportError:
-    # Forçar SQLite sempre
+    # Fallback para SQLite
+    USE_SHEETS = False
     USE_MYSQL = False
     SQLITE_PATH = "data/rpontes_rh.db"
 
@@ -125,7 +132,12 @@ def validate_config():
 
 def get_database_config():
     """Retorna configuração do banco de dados"""
-    if USE_MYSQL:
+    if USE_SHEETS:
+        return {
+            "type": "sheets",
+            "service": "google_sheets"
+        }
+    elif USE_MYSQL:
         return {
             "type": "mysql",
             "host": MYSQL_HOST,
