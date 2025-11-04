@@ -62,12 +62,16 @@ STATUS_FERIAS = {
 STATUS_FERIAS_OPTIONS = list(STATUS_FERIAS.values())
 
 # Configurações do banco de dados
-# Prioridade: Google Sheets > SQLite > MySQL
+# Prioridade: PostgreSQL > Google Sheets > SQLite > MySQL
 try:
     import streamlit as st
     try:
+        # Verificar se deve usar PostgreSQL (Supabase)
+        if 'connections' in st.secrets and 'postgresql' in st.secrets['connections']:
+            USE_SHEETS = True  # Usar SimpleDatabase (PostgreSQL)
+            USE_MYSQL = False
         # Verificar se deve usar Google Sheets
-        if 'gcp_service_account' in st.secrets:
+        elif 'gcp_service_account' in st.secrets:
             USE_SHEETS = True
             USE_MYSQL = False
         elif st.secrets.get("mysql", {}).get("use_sqlite", False):
@@ -132,6 +136,17 @@ def validate_config():
 
 def get_database_config():
     """Retorna configuração do banco de dados"""
+    try:
+        import streamlit as st
+        # Verificar PostgreSQL primeiro
+        if 'connections' in st.secrets and 'postgresql' in st.secrets['connections']:
+            return {
+                "type": "sheets",  # Usar SimpleDatabase
+                "service": "postgresql_supabase"
+            }
+    except:
+        pass
+        
     if USE_SHEETS:
         return {
             "type": "sheets",
