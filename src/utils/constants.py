@@ -12,6 +12,7 @@ DIAS_ANTECEDENCIA_MINIMA = 7
 
 # Setores
 SETORES = [
+    "ADMINISTRAÇÃO",
     "ASSISTÊNCIA TÉCNICA",
     "GESTÃO DE PESSOAS (RH)",
     "FINANCEIRO",
@@ -35,7 +36,7 @@ FUNCOES = [
     "Gerente",
     "RH",
     "Supervisor",
-    "Técnico",
+    "Consultor",
 ]
 
 # Status de Férias

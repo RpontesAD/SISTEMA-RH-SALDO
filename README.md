@@ -68,6 +68,7 @@ streamlit run app.py
 
 ## 🏢 Setores Disponíveis
 
+- Administração
 - Assistência Técnica
 - Gestão de Pessoas (RH)
 - Financeiro
