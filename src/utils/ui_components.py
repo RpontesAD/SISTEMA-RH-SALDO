@@ -20,12 +20,31 @@ def create_header(empresa: str, sistema: str, logo_path: str = None):
         logo_path: Caminho para o logo (opcional)
     """
     try:
-        st.markdown(
-            f'<div style="text-align: center; margin-bottom: 30px;"><h1>{empresa}</h1><h3 style="color: #666;">{sistema}</h3></div>',
-            unsafe_allow_html=True
-        )
+        # Verificar se logo existe e criar header com logo
+        if logo_path and os.path.exists(logo_path):
+            import base64
+            with open(logo_path, "rb") as img_file:
+                logo_base64 = base64.b64encode(img_file.read()).decode()
+            
+            st.markdown(
+                f'''
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="data:image/png;base64,{logo_base64}" width="150" style="margin-bottom: 10px;">
+                    <h1>{empresa}</h1>
+                    <h3 style="color: #666;">{sistema}</h3>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
+        else:
+            # Header sem logo
+            st.markdown(
+                f'<div style="text-align: center; margin-bottom: 30px;"><h1>{empresa}</h1><h3 style="color: #666;">{sistema}</h3></div>',
+                unsafe_allow_html=True
+            )
         
     except Exception as e:
+        # Fallback sem logo
         safe_html = safe_format_html("""
         <div style="text-align: center; margin-bottom: 30px;">
             <h1>{empresa}</h1>
