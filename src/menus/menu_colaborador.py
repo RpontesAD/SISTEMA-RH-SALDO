@@ -93,19 +93,8 @@ def _mostrar_edicao_dados(user):
         with col1:
             nome = st.text_input("Nome", value=user['nome'])
             email = st.text_input("Email", value=user['email'])
-            
-            try:
-                setor_index = SETORES.index(user['setor'])
-            except ValueError:
-                setor_index = 0
-            setor = st.selectbox(" Setor", SETORES, index=setor_index)
         
         with col2:
-            try:
-                funcao_index = FUNCOES.index(user['funcao'])
-            except ValueError:
-                funcao_index = 0
-            funcao = st.selectbox(" Função", FUNCOES, index=funcao_index)
             
             nova_senha = st.text_input("🔒 Nova Senha (deixe vazio para manter)", type="password")
             confirmar_senha = st.text_input("🔒 Confirmar Nova Senha", type="password")
@@ -124,19 +113,19 @@ def _mostrar_edicao_dados(user):
                 from ..services.colaboradores_service import ColaboradoresService
                 service = ColaboradoresService(st.session_state.users_db)
                 
-                # Atualizar dados básicos
+                # Atualizar dados usando o serviço (com validações)
                 user_id = int(user['id'])
-                resultado = st.session_state.users_db.update_user(
+                resultado = service.atualizar_colaborador(
                     user_id=user_id,
                     nome=nome.strip(),
                     email=email.strip().lower(),
-                    setor=setor,
-                    funcao=funcao,
+                    setor=user['setor'],
+                    funcao=user['funcao'],
                     nivel_acesso=user['nivel_acesso'],
                     saldo_ferias=user['saldo_ferias']
                 )
                 
-                if resultado:
+                if resultado["sucesso"]:
                     # Atualizar senha se fornecida
                     if nova_senha:
                         import bcrypt
@@ -152,15 +141,15 @@ def _mostrar_edicao_dados(user):
                     # Atualizar sessão
                     st.session_state.user.update({
                         'nome': nome.strip(),
-                        'email': email.strip().lower(),
-                        'setor': setor,
-                        'funcao': funcao
+                        'email': email.strip().lower()
                     })
                     
                     st.success("✅ Dados atualizados com sucesso!")
                     st.rerun()
                 else:
-                    st.error("❌ Erro ao atualizar dados")
+                    st.error(f"❌ {resultado['erro']}")
+                    if resultado.get('campo') == 'nome':
+                        st.info("💡 Verifique se o nome está correto e não contém números ou maiúsculas")
                     
             except Exception as e:
                 st.error(f"❌ Erro: {str(e)}")

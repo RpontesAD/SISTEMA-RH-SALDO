@@ -28,15 +28,10 @@ def menu_cadastro_colaborador():
     # Inicializar serviço
     service = ColaboradoresService(st.session_state.users_db)
     
-    # Limpar formulário se foi solicitado
-    if st.session_state.get('clear_form', False):
-        for key in ['nome_cadastro', 'email_cadastro', 'senha_cadastro', 'confirmar_senha_cadastro', 'setor_cadastro', 'funcao_cadastro', 'nivel_cadastro', 'saldo_cadastro', 'data_cadastro']:
-            if key in st.session_state:
-                del st.session_state[key]
-        st.session_state.clear_form = False
+
     
-    # Formulário de cadastro (não limpa em caso de erro)
-    with st.form("form_cadastro", clear_on_submit=False):
+    # Formulário de cadastro
+    with st.form("form_cadastro", clear_on_submit=True):
         col1, col2 = st.columns(2)
         
         with col1:
@@ -112,9 +107,7 @@ def _processar_cadastro(service: ColaboradoresService, nome: str, email: str, se
         if "saldo_usado" in resultado and resultado["saldo_usado"] != saldo_ferias:
             st.info(f"ℹ️ Saldo corrigido para {resultado['saldo_usado']} dias (dentro dos limites permitidos)")
         
-        # Limpar campos apenas em caso de sucesso
-        st.session_state.clear_form = True
-        st.rerun()
+        # Campos serão limpos automaticamente pelo clear_on_submit=True
     elif sucesso and resultado:
         _exibir_erro_cadastro(resultado)
     else:

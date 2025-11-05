@@ -138,7 +138,9 @@ def _interface_cadastrar_ferias(service: FeriasService, user_id: int, user_data)
     # Obter datas já ocupadas (apenas para validação)
     datas_ocupadas = _obter_datas_ocupadas(user_id)
     
-    with st.form("form_ferias"):
+
+    
+    with st.form("form_ferias", clear_on_submit=True):
         col1, col2 = st.columns(2)
         
         with col1:
@@ -186,8 +188,7 @@ def _interface_cadastrar_ferias(service: FeriasService, user_id: int, user_data)
                 st.success(resultado.get("mensagem", "Férias cadastradas"))
                 if "dias_uteis" in resultado:
                     st.info(f"Dias úteis calculados: {resultado['dias_uteis']}")
-                # Tema nativo mantém cores após rerun
-                st.rerun()
+                # Campos serão limpos automaticamente pelo clear_on_submit=True
             else:
                 _exibir_erro_cadastro(resultado)
 
