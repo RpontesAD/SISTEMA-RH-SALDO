@@ -374,3 +374,43 @@ class ColaboradoresService:
                 "sucesso": False,
                 "erro": f"Erro interno: {str(e)}"
             }
+    
+    def atualizar_senha(self, user_id: int, nova_senha: str) -> Dict[str, Any]:
+        """
+        Atualiza senha do colaborador.
+        
+        Args:
+            user_id: ID do colaborador
+            nova_senha: Nova senha
+            
+        Returns:
+            Dict com resultado da operação
+        """
+        # Validar senha
+        senha_valida, senha_msg = validar_senha(nova_senha)
+        if not senha_valida:
+            return {
+                "sucesso": False,
+                "erro": senha_msg,
+                "campo": "senha"
+            }
+        
+        try:
+            resultado = self.users_db.update_password(user_id, nova_senha)
+            
+            if resultado:
+                return {
+                    "sucesso": True,
+                    "mensagem": "Senha atualizada com sucesso"
+                }
+            else:
+                return {
+                    "sucesso": False,
+                    "erro": "Erro ao atualizar senha"
+                }
+                
+        except Exception as e:
+            return {
+                "sucesso": False,
+                "erro": f"Erro interno: {str(e)}"
+            }

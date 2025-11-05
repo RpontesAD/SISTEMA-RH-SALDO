@@ -5,12 +5,15 @@ def menu_coordenador():
     st.markdown("### Painel Coordenador")
     
     # Abas como no diretor
-    tab1, tab2 = st.tabs(["Minha Área", "Meu Setor"])
+    tab1, tab2, tab3 = st.tabs(["Minha Área", "Editar Dados", "Meu Setor"])
     
     with tab1:
         _menu_minha_area_coordenador()
     
     with tab2:
+        _mostrar_edicao_dados_coordenador()
+    
+    with tab3:
         _menu_setor_coordenador()
 
 def _menu_minha_area_coordenador():
@@ -130,3 +133,84 @@ def _menu_setor_coordenador():
         )
     else:
         st.info("Nenhum colaborador encontrado no seu setor.") 
+def _mostrar_edicao_dados_coordenador():
+    """Mostra formulário de edição de dados pessoais para coordenador"""
+    from ..utils.constants import SETORES, FUNCOES
+    
+    user = st.session_state.user
+    st.markdown("### Editar Meus Dados")
+    
+    with st.form("form_edicao_coordenador"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            nome = st.text_input("Nome", value=user['nome'])
+            email = st.text_input("Email", value=user['email'])
+            
+            try:
+                setor_index = SETORES.index(user['setor'])
+            except ValueError:
+                setor_index = 0
+            setor = st.selectbox("Setor", SETORES, index=setor_index)
+        
+        with col2:
+            try:
+                funcao_index = FUNCOES.index(user['funcao'])
+            except ValueError:
+                funcao_index = 0
+            funcao = st.selectbox("Função", FUNCOES, index=funcao_index)
+            
+            nova_senha = st.text_input("🔒 Nova Senha (deixe vazio para manter)", type="password")
+            confirmar_senha = st.text_input("🔒 Confirmar Nova Senha", type="password")
+        
+        if st.form_submit_button("Salvar Alterações", type="primary", use_container_width=True):
+            # Validar senhas se fornecidas
+            if nova_senha or confirmar_senha:
+                if nova_senha != confirmar_senha:
+                    st.error("❌ Senhas não coincidem")
+                    return
+                if len(nova_senha) < 6:
+                    st.error("❌ Senha deve ter pelo menos 6 caracteres")
+                    return
+            
+            try:
+                # Atualizar dados básicos
+                user_id = int(user['id'])
+                resultado = st.session_state.users_db.update_user(
+                    user_id=user_id,
+                    nome=nome.strip(),
+                    email=email.strip().lower(),
+                    setor=setor,
+                    funcao=funcao,
+                    nivel_acesso=user['nivel_acesso'],
+                    saldo_ferias=user['saldo_ferias']
+                )
+                
+                if resultado:
+                    # Atualizar senha se fornecida
+                    if nova_senha:
+                        import bcrypt
+                        senha_hash = bcrypt.hashpw(nova_senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                        resultado_senha = st.session_state.users_db._execute_query(
+                            "UPDATE usuarios SET senha_hash=%s WHERE id=%s", 
+                            (senha_hash, user_id)
+                        )
+                        if not resultado_senha:
+                            st.error("❌ Erro ao atualizar senha")
+                            return
+                    
+                    # Atualizar sessão
+                    st.session_state.user.update({
+                        'nome': nome.strip(),
+                        'email': email.strip().lower(),
+                        'setor': setor,
+                        'funcao': funcao
+                    })
+                    
+                    st.success("✅ Dados atualizados com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("❌ Erro ao atualizar dados")
+                    
+            except Exception as e:
+                st.error(f"❌ Erro: {str(e)}")

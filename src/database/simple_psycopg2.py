@@ -152,6 +152,14 @@ class SimplePsycopg2:
         """Atualiza saldo"""
         return self._execute_query("UPDATE usuarios SET saldo_ferias=%s WHERE id=%s", (novo_saldo, user_id))
     
+    def update_password(self, user_id, nova_senha):
+        """Atualiza senha do usuário"""
+        try:
+            senha_hash = bcrypt.hashpw(nova_senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            return self._execute_query("UPDATE usuarios SET senha_hash=%s WHERE id=%s", (senha_hash, user_id))
+        except Exception as e:
+            return False
+    
     def add_ferias(self, usuario_id, data_inicio, data_fim, status="Pendente", usuario_nivel="colaborador"):
         """Adiciona férias"""
         try:

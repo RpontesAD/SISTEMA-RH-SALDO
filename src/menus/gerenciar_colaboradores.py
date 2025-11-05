@@ -190,11 +190,23 @@ def _formulario_edicao(user_data):
             nivel_acesso = st.selectbox("Nível de Acesso", niveis, index=nivel_index)
             
             saldo_ferias = st.number_input("Saldo de Férias", min_value=0, value=int(user_data['saldo_ferias']))
+            
+            nova_senha = st.text_input("🔒 Nova Senha (deixe vazio para manter)", type="password")
+            confirmar_senha = st.text_input("🔒 Confirmar Nova Senha", type="password")
         
         col_save, col_cancel = st.columns(2)
         
         with col_save:
             if st.form_submit_button("Salvar Alterações", type="primary", use_container_width=True):
+                # Validar senhas se fornecidas
+                if nova_senha or confirmar_senha:
+                    if nova_senha != confirmar_senha:
+                        st.error("❌ Senhas não coincidem")
+                        return
+                    if len(nova_senha) < 6:
+                        st.error("❌ Senha deve ter pelo menos 6 caracteres")
+                        return
+                
                 try:
                     from ..services.colaboradores_service import ColaboradoresService
                     service = ColaboradoresService(st.session_state.users_db)
@@ -206,6 +218,18 @@ def _formulario_edicao(user_data):
                     resultado = service.atualizar_colaborador(user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias_int)
                     
                     if resultado["sucesso"]:
+                        # Atualizar senha se fornecida
+                        if nova_senha:
+                            import bcrypt
+                            senha_hash = bcrypt.hashpw(nova_senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                            resultado_senha = st.session_state.users_db._execute_query(
+                                "UPDATE usuarios SET senha_hash=%s WHERE id=%s", 
+                                (senha_hash, user_id)
+                            )
+                            if not resultado_senha:
+                                st.error("❌ Erro ao atualizar senha")
+                                return
+                        
                         st.success(f"✅ {resultado['mensagem']}")
                         _limpar_sessao()
                         st.rerun()
