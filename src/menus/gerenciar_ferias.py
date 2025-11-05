@@ -326,18 +326,38 @@ def _interface_gerenciar_status(service: FeriasService, user_id: int):
 def _obter_datas_ocupadas(user_id):
     """Obtém todas as datas já ocupadas por férias aprovadas"""
     try:
-        conn = st.session_state.ferias_db.connection.get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT data_inicio, data_fim FROM ferias WHERE usuario_id = ? AND status = 'Aprovado'", (user_id,))
-        resultados = cursor.fetchall()
-        cursor.close()
+        # Usar o método da nova database
+        ferias_list = st.session_state.ferias_db.get_ferias_usuario(user_id)
+        
+        # Converter lista para DataFrame se necessário
+        if isinstance(ferias_list, list):
+            if not ferias_list:
+                return []
+            ferias_df = pd.DataFrame(ferias_list)
+        else:
+            ferias_df = ferias_list
+            if ferias_df.empty:
+                return []
+        
+        # Filtrar apenas férias aprovadas
+        ferias_aprovadas = ferias_df[ferias_df['status'] == 'Aprovado']
         
         datas_ocupadas = []
-        for inicio, fim in resultados:
+        for _, row in ferias_aprovadas.iterrows():
+            inicio = row['data_inicio']
+            fim = row['data_fim']
+            
+            # Converter para date se necessário
             if isinstance(inicio, str):
                 inicio = pd.to_datetime(inicio).date()
+            elif hasattr(inicio, 'date'):
+                inicio = inicio.date()
+                
             if isinstance(fim, str):
                 fim = pd.to_datetime(fim).date()
+            elif hasattr(fim, 'date'):
+                fim = fim.date()
+                
             datas_ocupadas.append((inicio, fim))
         
         return datas_ocupadas

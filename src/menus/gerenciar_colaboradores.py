@@ -6,16 +6,24 @@ def menu_gerenciar_colaboradores():
     """Menu para gerenciar colaboradores"""
     st.markdown("#### Gerenciar Colaboradores")
     
-    users_df = st.session_state.users_db.get_users()
+    users_list = st.session_state.users_db.get_users()
     
-    # Verificar se retornou None ou DataFrame válido
-    if users_df is None:
+    # Verificar se retornou None ou lista válida
+    if users_list is None:
         st.error("Erro ao carregar dados dos colaboradores")
         return
-        
-    if users_df.empty:
-        st.warning("Nenhum colaborador cadastrado")
-        return
+    
+    # Converter lista para DataFrame
+    if isinstance(users_list, list):
+        if not users_list:
+            st.warning("Nenhum colaborador cadastrado")
+            return
+        users_df = pd.DataFrame(users_list)
+    else:
+        users_df = users_list
+        if users_df.empty:
+            st.warning("Nenhum colaborador cadastrado")
+            return
     
     # Filtros melhorados
     filtro_nome, filtro_setor, filtro_funcao, filtro_saldo = _mostrar_filtros_avancados(users_df)

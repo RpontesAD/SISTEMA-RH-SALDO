@@ -184,15 +184,29 @@ class ColaboradoresService:
             Dict com colaboradores
         """
         try:
-            users_df = self.users_db.get_users(setor=setor)
+            users_list = self.users_db.get_users(setor=setor)
             
-            if users_df.empty:
-                return {
-                    "sucesso": True,
-                    "vazio": True,
-                    "mensagem": "Nenhum colaborador encontrado",
-                    "colaboradores": []
-                }
+            # Converter lista para DataFrame se necessário
+            if isinstance(users_list, list):
+                if not users_list:
+                    return {
+                        "sucesso": True,
+                        "vazio": True,
+                        "mensagem": "Nenhum colaborador encontrado",
+                        "colaboradores": []
+                    }
+                
+                import pandas as pd
+                users_df = pd.DataFrame(users_list)
+            else:
+                users_df = users_list
+                if users_df.empty:
+                    return {
+                        "sucesso": True,
+                        "vazio": True,
+                        "mensagem": "Nenhum colaborador encontrado",
+                        "colaboradores": []
+                    }
             
             return {
                 "sucesso": True,

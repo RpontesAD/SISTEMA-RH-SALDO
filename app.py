@@ -60,9 +60,9 @@ if "db_conn" not in st.session_state:
         config = get_database_config()
         
         if config["type"] == "sheets":
-            # Usar SimpleDatabase (PostgreSQL)
-            from src.database.simple_database import SimpleDatabase
-            st.session_state.db = SimpleDatabase()
+            # Usar database simples (PostgreSQL)
+            from src.database.simple_psycopg2 import SimplePsycopg2
+            st.session_state.db = SimplePsycopg2()
             
         elif config["type"] == "mysql":
             # Usar MySQL

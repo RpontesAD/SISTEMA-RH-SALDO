@@ -102,10 +102,10 @@ streamlit run app.py
 
 - **Frontend:** Streamlit
 - **Backend:** Python 3.8+
-- **Banco de Dados:** Google Sheets (persistente)
+- **Banco de Dados:** PostgreSQL (Supabase)
 - **Criptografia:** bcrypt
 - **Análise de Dados:** Pandas
-- **API:** Google Sheets API
+- **Conexão:** psycopg2
 
 ## 📁 Estrutura do Projeto
 
@@ -121,9 +121,8 @@ Gestão RH/
 │   ├── menus/               # Interfaces
 │   ├── services/            # Camada de serviços
 │   └── utils/               # Utilitários
-├── data/                    # Banco de dados
-│   ├── rpontes_rh.db       # SQLite principal
-│   └── backups/             # Backups automáticos
+├── data/                    # Dados locais
+│   └── .keep                # Manter diretório
 ├── logs/                    # Logs do sistema
 ├── tests/                   # Testes automatizados
 └── docs/                    # Documentação
@@ -143,10 +142,10 @@ streamlit run app.py --server.port 8502
 ```
 
 ### Problemas de Banco
-O sistema usa Google Sheets como banco persistente. Se houver problemas:
-1. Verifique se as credenciais do Google Cloud estão configuradas
-2. Confirme se a planilha foi compartilhada com o service account
-3. Consulte o guia GOOGLE_SHEETS_SETUP.md
+O sistema usa PostgreSQL (Supabase) como banco persistente. Se houver problemas:
+1. Verifique se as credenciais do Supabase estão configuradas em `.streamlit/secrets.toml`
+2. Confirme se a conexão com o Supabase está ativa
+3. Verifique os logs do sistema em `logs/`
 4. Use as credenciais padrão: admin@rpontes.com / admin123
 
 ## 📊 Status do Sistema
@@ -176,4 +175,4 @@ Para suporte técnico, consulte a documentação em `docs/` ou verifique os logs
 
 ---
 
-**Última atualização:** Outubro 2025 - Sistema totalmente funcional
+**Última atualização:** Novembro 2025 - Sistema migrado para PostgreSQL (Supabase) e totalmente funcional

@@ -28,16 +28,24 @@ def menu_dashboard():
 def _mostrar_metricas_gerais():
     """Mostra métricas gerais do sistema"""
     try:
-        users_df = st.session_state.users_db.get_users()
+        users_list = st.session_state.users_db.get_users()
         
-        # Verificar se retornou None ou DataFrame válido
-        if users_df is None:
+        # Verificar se retornou None ou lista válida
+        if users_list is None:
             st.error("Erro ao carregar dados dos colaboradores") 
             return
-            
-        if users_df.empty:
-            st.info("Nenhum dado disponível")
-            return
+        
+        # Converter lista para DataFrame se necessário
+        if isinstance(users_list, list):
+            if not users_list:
+                st.info("Nenhum dado disponível")
+                return
+            users_df = pd.DataFrame(users_list)
+        else:
+            users_df = users_list
+            if users_df.empty:
+                st.info("Nenhum dado disponível")
+                return
         
         # Filtro por setor - usar constantes como base
         from ..utils.constants import SETORES

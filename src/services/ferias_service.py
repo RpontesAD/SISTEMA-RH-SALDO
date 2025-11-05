@@ -85,7 +85,15 @@ class FeriasService:
         # 4. Validar saldo (se necessário)
         if status == "Aprovada":
             try:
-                users_df = self.users_db.get_users()
+                users_list = self.users_db.get_users()
+                
+                # Converter lista para DataFrame se necessário
+                if isinstance(users_list, list):
+                    import pandas as pd
+                    users_df = pd.DataFrame(users_list)
+                else:
+                    users_df = users_list
+                    
                 user_data = users_df[users_df["id"] == usuario_id].iloc[0]
                 saldo_atual = user_data["saldo_ferias"]
                 
@@ -181,15 +189,28 @@ class FeriasService:
             Dict com usuários e opções para selectbox
         """
         try:
-            users_df = self.users_db.get_users()
+            users_list = self.users_db.get_users()
             
-            if users_df.empty:
-                return {
-                    "sucesso": False,
-                    "erro": "Nenhum colaborador cadastrado",
-                    "usuarios": [],
-                    "opcoes": {}
-                }
+            # Converter lista para DataFrame se necessário
+            if isinstance(users_list, list):
+                if not users_list:
+                    return {
+                        "sucesso": False,
+                        "erro": "Nenhum colaborador cadastrado",
+                        "usuarios": [],
+                        "opcoes": {}
+                    }
+                import pandas as pd
+                users_df = pd.DataFrame(users_list)
+            else:
+                users_df = users_list
+                if users_df.empty:
+                    return {
+                        "sucesso": False,
+                        "erro": "Nenhum colaborador cadastrado",
+                        "usuarios": [],
+                        "opcoes": {}
+                    }
             
             # Ordenar por nome e formatar opções para selectbox
             from collections import OrderedDict
@@ -223,14 +244,26 @@ class FeriasService:
             Dict com histórico formatado
         """
         try:
-            ferias_df = self.ferias_db.get_ferias_usuario(user_id)
+            ferias_list = self.ferias_db.get_ferias_usuario(user_id)
             
-            if ferias_df.empty:
-                return {
-                    "sucesso": True,
-                    "vazio": True,
-                    "mensagem": "Nenhuma férias cadastrada para este colaborador"
-                }
+            # Converter lista para DataFrame se necessário
+            if isinstance(ferias_list, list):
+                if not ferias_list:
+                    return {
+                        "sucesso": True,
+                        "vazio": True,
+                        "mensagem": "Nenhuma férias cadastrada para este colaborador"
+                    }
+                import pandas as pd
+                ferias_df = pd.DataFrame(ferias_list)
+            else:
+                ferias_df = ferias_list
+                if ferias_df.empty:
+                    return {
+                        "sucesso": True,
+                        "vazio": True,
+                        "mensagem": "Nenhuma férias cadastrada para este colaborador"
+                    }
             
             # Formatar datas para exibição no padrão brasileiro
             ferias_formatado = ferias_df.copy()
@@ -297,20 +330,22 @@ class FeriasService:
     def _get_ferias_info(self, ferias_id: int) -> dict:
         """Obtém informações das férias"""
         try:
-            # Buscar diretamente no banco
-            conn = self.ferias_db.connection.get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, usuario_id, data_inicio, data_fim, dias_utilizados, status FROM ferias WHERE id = ?", (ferias_id,))
-            result = cursor.fetchone()
-            conn.close()
-            if result:
+            # Usar o método da nova database
+            result = self.ferias_db._execute_query(
+                "SELECT id, usuario_id, data_inicio, data_fim, dias_utilizados, status FROM ferias WHERE id = %s", 
+                (ferias_id,), 
+                fetch=True
+            )
+            
+            if result and len(result) > 0:
+                row = result[0]
                 return {
-                    'id': result[0],
-                    'usuario_id': result[1],
-                    'data_inicio': result[2],
-                    'data_fim': result[3],
-                    'dias_utilizados': result[4],
-                    'status': result[5]
+                    'id': row['id'],
+                    'usuario_id': row['usuario_id'],
+                    'data_inicio': row['data_inicio'],
+                    'data_fim': row['data_fim'],
+                    'dias_utilizados': row['dias_utilizados'],
+                    'status': row['status']
                 }
             return None
         except Exception as e:
@@ -359,13 +394,32 @@ class FeriasService:
         """
         try:
             # Obter dados do usuário
-            users_df = self.users_db.get_users()
+            users_list = self.users_db.get_users()
+            
+            # Converter lista para DataFrame se necessário
+            if isinstance(users_list, list):
+                import pandas as pd
+                users_df = pd.DataFrame(users_list)
+            else:
+                users_df = users_list
+                
             user_data = users_df[users_df["id"] == user_id].iloc[0]
             saldo_atual = user_data["saldo_ferias"]
             
             # Obter férias pendentes
-            ferias_df = self.ferias_db.get_ferias_usuario(user_id)
-            ferias_pendentes = ferias_df[ferias_df["status"] == "Pendente"] if not ferias_df.empty else []
+            ferias_list = self.ferias_db.get_ferias_usuario(user_id)
+            
+            # Converter lista para DataFrame se necessário
+            if isinstance(ferias_list, list):
+                if not ferias_list:
+                    ferias_pendentes = []
+                else:
+                    import pandas as pd
+                    ferias_df = pd.DataFrame(ferias_list)
+                    ferias_pendentes = ferias_df[ferias_df["status"] == "Pendente"]
+            else:
+                ferias_df = ferias_list
+                ferias_pendentes = ferias_df[ferias_df["status"] == "Pendente"] if not ferias_df.empty else []
             
             # Calcular usando RegrasSaldo
             pendentes_list = ferias_pendentes.to_dict('records') if len(ferias_pendentes) > 0 else []
@@ -402,9 +456,18 @@ class FeriasService:
             Total de dias aprovados
         """
         try:
-            ferias_df = self.ferias_db.get_ferias_usuario(user_id)
-            if ferias_df.empty:
-                return 0
+            ferias_list = self.ferias_db.get_ferias_usuario(user_id)
+            
+            # Converter lista para DataFrame se necessário
+            if isinstance(ferias_list, list):
+                if not ferias_list:
+                    return 0
+                import pandas as pd
+                ferias_df = pd.DataFrame(ferias_list)
+            else:
+                ferias_df = ferias_list
+                if ferias_df.empty:
+                    return 0
             
             ferias_aprovadas = ferias_df[ferias_df["status"] == "Aprovado"]
             if ferias_aprovadas.empty:
