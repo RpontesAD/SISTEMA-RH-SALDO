@@ -12,15 +12,8 @@ class SimplePsycopg2:
     
     def __init__(self):
         self.connection = self
-        # Debug: verificar se secrets existem
-        try:
-            pg_config = st.secrets["connections"]["postgresql"]
-            st.write(f"✅ Secrets encontrados: host={pg_config['host']}")
-        except Exception as e:
-            st.error(f"❌ Erro ao acessar secrets: {e}")
-            st.stop()
-        
         # Construir connection string a partir dos componentes
+        pg_config = st.secrets["connections"]["postgresql"]
         # Escapar caracteres especiais na senha
         import urllib.parse
         password_escaped = urllib.parse.quote_plus(pg_config['password'])
