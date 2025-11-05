@@ -34,17 +34,3 @@ def validar_nome(nome: str) -> Tuple[bool, str]:
     
     return True, "Nome válido"
 
-def verificar_nome_duplicado(nome: str, users_db, user_id: int = None) -> Tuple[bool, str]:
-    """Verifica se nome já existe no banco"""
-    try:
-        users_list = users_db.get_users()
-        if isinstance(users_list, list):
-            for user in users_list:
-                # Pular o próprio usuário na edição
-                if user_id and user.get('id') == user_id:
-                    continue
-                if user.get('nome', '').strip().lower() == nome.strip().lower():
-                    return False, "Já existe um colaborador com este nome"
-        return True, "Nome disponível"
-    except:
-        return True, "Não foi possível verificar duplicação"

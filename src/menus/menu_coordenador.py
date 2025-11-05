@@ -144,7 +144,7 @@ def _mostrar_edicao_dados_coordenador():
         col1, col2 = st.columns(2)
         
         with col1:
-            nome = st.text_input("Nome", value=user['nome'])
+            st.text_input("Nome", value=user['nome'], disabled=True, help="Nome não pode ser alterado")
             email = st.text_input("Email", value=user['email'])
         
         with col2:
@@ -163,13 +163,11 @@ def _mostrar_edicao_dados_coordenador():
                     return
             
             try:
-                # Atualizar dados usando o serviço (com validações)
-                from ..services.colaboradores_service import ColaboradoresService
-                service = ColaboradoresService(st.session_state.users_db)
+                # Atualizar apenas email e senha
                 user_id = int(user['id'])
-                resultado = service.atualizar_colaborador(
+                resultado = st.session_state.users_db.update_user(
                     user_id=user_id,
-                    nome=nome.strip(),
+                    nome=user['nome'],  # Nome não alterado
                     email=email.strip().lower(),
                     setor=user['setor'],
                     funcao=user['funcao'],
@@ -177,7 +175,7 @@ def _mostrar_edicao_dados_coordenador():
                     saldo_ferias=user['saldo_ferias']
                 )
                 
-                if resultado["sucesso"]:
+                if resultado:
                     # Atualizar senha se fornecida
                     if nova_senha:
                         import bcrypt
@@ -192,16 +190,13 @@ def _mostrar_edicao_dados_coordenador():
                     
                     # Atualizar sessão
                     st.session_state.user.update({
-                        'nome': nome.strip(),
                         'email': email.strip().lower()
                     })
                     
                     st.success("✅ Dados atualizados com sucesso!")
                     st.rerun()
                 else:
-                    st.error(f"❌ {resultado['erro']}")
-                    if resultado.get('campo') == 'nome':
-                        st.info("💡 Verifique se o nome está correto e não contém números ou maiúsculas")
+                    st.error("❌ Erro ao atualizar dados")
                     
             except Exception as e:
                 st.error(f"❌ Erro: {str(e)}")

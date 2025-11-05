@@ -7,7 +7,7 @@ Esta camada separa a lógica de negócio da interface para operações de colabo
 from typing import Dict, Any
 from datetime import date
 from ..core.regras_saldo import RegrasSaldo
-from ..utils.validators import validar_email, validar_senha, validar_nome, verificar_nome_duplicado
+from ..utils.validators import validar_email, validar_senha, validar_nome
 from ..utils.constants import DIAS_FERIAS_PADRAO
 from ..utils.code_standards import (
     Usuario, ResultadoOperacao, ValidacaoResult, Constantes, 
@@ -57,15 +57,6 @@ class ColaboradoresService:
             return {
                 "valido": False,
                 "erro": nome_msg,
-                "campo": "nome"
-            }
-        
-        # Verificar duplicação de nome
-        nome_disponivel, nome_dup_msg = verificar_nome_duplicado(nome, self.users_db)
-        if not nome_disponivel:
-            return {
-                "valido": False,
-                "erro": nome_dup_msg,
                 "campo": "nome"
             }
         
@@ -254,15 +245,6 @@ class ColaboradoresService:
             return {
                 "sucesso": False,
                 "erro": nome_msg,
-                "campo": "nome"
-            }
-        
-        # Verificar duplicação de nome (excluindo o próprio usuário)
-        nome_disponivel, nome_dup_msg = verificar_nome_duplicado(nome, self.users_db, user_id)
-        if not nome_disponivel:
-            return {
-                "sucesso": False,
-                "erro": nome_dup_msg,
                 "campo": "nome"
             }
         
