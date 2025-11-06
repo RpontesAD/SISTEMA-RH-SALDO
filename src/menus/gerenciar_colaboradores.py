@@ -6,7 +6,24 @@ def menu_gerenciar_colaboradores():
     """Menu para gerenciar colaboradores"""
     st.markdown("#### Gerenciar Colaboradores")
     
-    users_list = st.session_state.users_db.get_users()
+    # Filtro por status
+    col_status, col_space = st.columns([2, 3])
+    with col_status:
+        status_filter = st.selectbox(
+            "Filtrar por Status",
+            ["Ativos", "Inativos", "Todos"],
+            help="Escolha quais colaboradores visualizar"
+        )
+    
+    # Buscar colaboradores baseado no filtro
+    if status_filter == "Ativos":
+        users_list = st.session_state.users_db.get_users(incluir_inativos=False)
+    elif status_filter == "Inativos":
+        # Buscar todos e filtrar apenas inativos
+        all_users = st.session_state.users_db.get_users(incluir_inativos=True)
+        users_list = [user for user in all_users if not user.get('ativo', True)]
+    else:  # "Todos"
+        users_list = st.session_state.users_db.get_users(incluir_inativos=True)
     
     # Verificar se retornou None ou lista válida
     if users_list is None:
@@ -77,7 +94,15 @@ def _aplicar_filtros(users_df, filtro_nome, filtro_setor, filtro_funcao, filtro_
 
 def _mostrar_tabela_colaboradores(df_filtrado):
     """Tabela principal com ações claras"""
-    st.markdown(f"##### Colaboradores ({len(df_filtrado)} encontrados)")
+    # Contar ativos e inativos
+    if not df_filtrado.empty:
+        ativos = len(df_filtrado[df_filtrado.get('ativo', True) == True])
+        inativos = len(df_filtrado[df_filtrado.get('ativo', True) == False])
+        status_info = f" ({ativos} ativos, {inativos} inativos)" if inativos > 0 else f" ({ativos} ativos)"
+    else:
+        status_info = ""
+    
+    st.markdown(f"##### Colaboradores ({len(df_filtrado)} encontrados){status_info}")
     
     if df_filtrado.empty:
         st.info("Nenhum colaborador encontrado com os filtros aplicados")
@@ -87,7 +112,9 @@ def _mostrar_tabela_colaboradores(df_filtrado):
     df_sorted = df_filtrado.sort_values('nome').reset_index(drop=True)
     
     if len(df_sorted) > 0:
-        nomes_ordenados = [f"{row['nome']} - {row['setor']} ({row['saldo_ferias']} dias)" for _, row in df_sorted.iterrows()]
+        nomes_ordenados = []
+        for _, row in df_sorted.iterrows():
+            nomes_ordenados.append(f"{row['nome']} - {row['setor']} ({row['saldo_ferias']} dias)")
         selected_index = st.selectbox(
             "Selecionar colaborador",
             options=range(len(nomes_ordenados)),
@@ -119,12 +146,19 @@ def _mostrar_acoes_colaborador(user_data):
     with col3:
         st.write(f"**Nível:** {user_data['nivel_acesso']}")
         st.write(f"**Saldo:** {user_data['saldo_ferias']} dias")
+        
+        # Mostrar status ativo/inativo
+        ativo = user_data.get('ativo', True)
+        if ativo:
+            st.success("**Status:** Ativo")
+        else:
+            st.error("**Status:** Inativo")
     
     # Ações disponíveis
     st.markdown("---")
     st.markdown("##### Ações Disponíveis :")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         if st.button("Editar Dados", use_container_width=True):
@@ -139,6 +173,20 @@ def _mostrar_acoes_colaborador(user_data):
             st.rerun()
     
     with col3:
+        # Verificar se usuário está ativo
+        ativo = user_data.get('ativo', True)
+        if ativo:
+            if st.button("Inativar", use_container_width=True, help="Inativa colaborador sem excluir dados"):
+                st.session_state.acao_colaborador = "inativar"
+                st.session_state.user_selecionado = user_data
+                st.rerun()
+        else:
+            if st.button("Reativar", use_container_width=True, help="Reativa colaborador"):
+                st.session_state.acao_colaborador = "reativar"
+                st.session_state.user_selecionado = user_data
+                st.rerun()
+    
+    with col4:
         if st.button("Excluir", use_container_width=True, type="secondary"):
             st.session_state.acao_colaborador = "excluir"
             st.session_state.user_selecionado = user_data
@@ -154,6 +202,10 @@ def _executar_acao(acao, user_data):
         _formulario_edicao(user_data)
     elif acao == "saldo":
         _formulario_saldo(user_data)
+    elif acao == "inativar":
+        _confirmacao_inativacao(user_data)
+    elif acao == "reativar":
+        _confirmacao_reativacao(user_data)
     elif acao == "excluir":
         _confirmacao_exclusao(user_data)
 
@@ -340,6 +392,73 @@ def _confirmacao_exclusao(user_data):
                             st.error(f"❌ {resultado['erro']}")
                     except Exception as e:
                         st.error(f"❌ Erro ao excluir colaborador: {str(e)}")
+        
+        with col_cancel:
+            if st.form_submit_button("❌ Cancelar", use_container_width=True):
+                _limpar_sessao()
+                st.rerun()
+
+def _confirmacao_inativacao(user_data):
+    """Confirmação para inativar colaborador"""
+    st.markdown("---")
+    st.markdown("### Inativar Colaborador")
+    
+    st.warning(f"⚠️ **Inativar colaborador:** {user_data['nome']}")
+    st.info("💾 **Dados preservados:** Todos os dados e histórico serão mantidos")
+    st.info("🚫 **Efeito:** Colaborador não aparecerá nas listas principais e não poderá fazer login")
+    st.success("🔄 **Reversível:** Pode ser reativado a qualquer momento")
+    
+    with st.form("form_inativacao"):
+        col_confirm, col_cancel = st.columns(2)
+        
+        with col_confirm:
+            if st.form_submit_button("Inativar Colaborador", type="primary", use_container_width=True):
+                try:
+                    user_id = int(user_data['id'])
+                    sucesso = st.session_state.users_db.inativar_usuario(user_id)
+                    
+                    if sucesso:
+                        st.success(f"✅ {user_data['nome']} foi inativado com sucesso!")
+                        st.info("💾 Todos os dados foram preservados")
+                        _limpar_sessao()
+                        st.rerun()
+                    else:
+                        st.error("❌ Erro ao inativar colaborador")
+                except Exception as e:
+                    st.error(f"❌ Erro: {str(e)}")
+        
+        with col_cancel:
+            if st.form_submit_button("❌ Cancelar", use_container_width=True):
+                _limpar_sessao()
+                st.rerun()
+
+def _confirmacao_reativacao(user_data):
+    """Confirmação para reativar colaborador"""
+    st.markdown("---")
+    st.markdown("### Reativar Colaborador")
+    
+    st.success(f"✅ **Reativar colaborador:** {user_data['nome']}")
+    st.info("🔄 **Efeito:** Colaborador voltará a aparecer nas listas e poderá fazer login")
+    st.info("💾 **Dados preservados:** Todos os dados e histórico foram mantidos")
+    
+    with st.form("form_reativacao"):
+        col_confirm, col_cancel = st.columns(2)
+        
+        with col_confirm:
+            if st.form_submit_button("Reativar Colaborador", type="primary", use_container_width=True):
+                try:
+                    user_id = int(user_data['id'])
+                    sucesso = st.session_state.users_db.ativar_usuario(user_id)
+                    
+                    if sucesso:
+                        st.success(f"✅ {user_data['nome']} foi reativado com sucesso!")
+                        st.info("🔄 Colaborador pode fazer login novamente")
+                        _limpar_sessao()
+                        st.rerun()
+                    else:
+                        st.error("❌ Erro ao reativar colaborador")
+                except Exception as e:
+                    st.error(f"❌ Erro: {str(e)}")
         
         with col_cancel:
             if st.form_submit_button("❌ Cancelar", use_container_width=True):

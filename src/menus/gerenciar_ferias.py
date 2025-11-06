@@ -159,6 +159,18 @@ def _interface_cadastrar_ferias(service: FeriasService, user_id: int, user_data)
             # Obter nível do usuário logado
             user_nivel = st.session_state.get('user', {}).get('nivel_acesso', 'colaborador')
             
+            # Verificar saldo antes de cadastrar
+            saldo_info = service.obter_informacoes_saldo(user_id)
+            if saldo_info["sucesso"]:
+                # Calcular dias úteis da nova solicitação
+                from ..utils.calculos import calcular_dias_uteis
+                dias_solicitados = calcular_dias_uteis(data_inicio, data_fim)
+                
+                # Verificar se há saldo suficiente
+                if dias_solicitados > saldo_info["saldo_atual"]:
+                    st.error(f"❌ Saldo insuficiente! Você tem {saldo_info['saldo_atual']} dias disponíveis, mas está solicitando {dias_solicitados} dias.")
+                    return
+            
             # Usar serviço para cadastrar
             resultado = service.cadastrar_ferias(user_id, data_inicio, data_fim, status, user_nivel)
             

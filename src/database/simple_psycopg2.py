@@ -46,9 +46,15 @@ class SimplePsycopg2:
                 funcao TEXT NOT NULL,
                 nivel_acesso TEXT DEFAULT 'colaborador',
                 saldo_ferias INTEGER DEFAULT 12,
+                ativo BOOLEAN DEFAULT true,
                 data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 data_admissao DATE
             )
+        """)
+        
+        # Adicionar coluna ativo se não existir (para bancos existentes)
+        self._execute_query("""
+            ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true
         """)
         
         # Criar tabela ferias
@@ -62,6 +68,70 @@ class SimplePsycopg2:
                 status TEXT DEFAULT 'Pendente',
                 data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        """)
+        
+        # Criar tabela renovacao_saldo
+        self._execute_query("""
+            CREATE TABLE IF NOT EXISTS renovacao_saldo (
+                id SERIAL PRIMARY KEY,
+                ano INTEGER UNIQUE NOT NULL,
+                saldo_padrao INTEGER NOT NULL,
+                data_aplicacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                usuario_responsavel_id INTEGER REFERENCES usuarios(id),
+                backup_dados TEXT
+            )
+        """)
+        
+        # Criar tabela saldos_anuais
+        self._execute_query("""
+            CREATE TABLE IF NOT EXISTS saldos_anuais (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id),
+                ano INTEGER NOT NULL,
+                saldo_inicial INTEGER NOT NULL,
+                saldo_atual INTEGER NOT NULL,
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(usuario_id, ano)
+            )
+        """)
+        
+        # Criar tabela avisos
+        self._execute_query("""
+            CREATE TABLE IF NOT EXISTS avisos (
+                id SERIAL PRIMARY KEY,
+                titulo TEXT NOT NULL,
+                conteudo TEXT NOT NULL,
+                autor_id INTEGER REFERENCES usuarios(id),
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                ativo BOOLEAN DEFAULT true
+            )
+        """)
+        
+        # Criar tabela avisos_destinatarios
+        self._execute_query("""
+            CREATE TABLE IF NOT EXISTS avisos_destinatarios (
+                id SERIAL PRIMARY KEY,
+                aviso_id INTEGER REFERENCES avisos(id) ON DELETE CASCADE,
+                usuario_id INTEGER REFERENCES usuarios(id),
+                lido BOOLEAN DEFAULT false,
+                data_leitura TIMESTAMP
+            )
+        """)
+        
+        # Habilitar RLS nas novas tabelas
+        self._execute_query("ALTER TABLE renovacao_saldo ENABLE ROW LEVEL SECURITY")
+        self._execute_query("ALTER TABLE saldos_anuais ENABLE ROW LEVEL SECURITY")
+        
+        # Criar políticas RLS para renovacao_saldo
+        self._execute_query("""
+            CREATE POLICY IF NOT EXISTS "Permitir acesso total" ON renovacao_saldo
+            FOR ALL USING (true)
+        """)
+        
+        # Criar políticas RLS para saldos_anuais
+        self._execute_query("""
+            CREATE POLICY IF NOT EXISTS "Permitir acesso total" ON saldos_anuais
+            FOR ALL USING (true)
         """)
         
         # Criar admin se não existir
@@ -85,9 +155,9 @@ class SimplePsycopg2:
         return self
     
     def authenticate_user(self, email, senha):
-        """Autentica usuário"""
+        """Autentica usuário (apenas usuários ativos)"""
         try:
-            users = self._execute_query("SELECT * FROM usuarios WHERE email = %s", (email,), fetch=True)
+            users = self._execute_query("SELECT * FROM usuarios WHERE email = %s AND ativo = true", (email,), fetch=True)
             
             if users:
                 user = users[0]
@@ -99,18 +169,30 @@ class SimplePsycopg2:
                         'setor': user['setor'],
                         'funcao': user['funcao'],
                         'nivel_acesso': user['nivel_acesso'],
-                        'saldo_ferias': user['saldo_ferias']
+                        'saldo_ferias': user['saldo_ferias'],
+                        'ativo': user.get('ativo', True)
                     }
             return None
         except Exception as e:
             st.error(f"Erro na autenticação: {e}")
             return None
     
-    def get_users(self, setor=None):
+    def get_users(self, setor=None, incluir_inativos=False):
         """Obtém usuários - retorna lista de dicts"""
-        if setor:
-            return self._execute_query("SELECT * FROM usuarios WHERE setor = %s", (setor,), fetch=True)
-        return self._execute_query("SELECT * FROM usuarios", fetch=True)
+        try:
+            if incluir_inativos:
+                # Incluir todos os usuários (ativos e inativos)
+                if setor:
+                    return self._execute_query("SELECT * FROM usuarios WHERE setor = %s ORDER BY nome", (setor,), fetch=True)
+                return self._execute_query("SELECT * FROM usuarios ORDER BY nome", fetch=True)
+            else:
+                # Apenas usuários ativos (padrão)
+                if setor:
+                    return self._execute_query("SELECT * FROM usuarios WHERE setor = %s AND ativo = true ORDER BY nome", (setor,), fetch=True)
+                return self._execute_query("SELECT * FROM usuarios WHERE ativo = true ORDER BY nome", fetch=True)
+        except Exception as e:
+            st.error(f"Erro ao buscar usuários: {e}")
+            return []
     
     def create_user(self, nome, email, senha, setor, funcao, nivel_acesso="colaborador", saldo_ferias=12, data_admissao=None):
         """Cria usuário"""
@@ -143,6 +225,14 @@ class SimplePsycopg2:
             UPDATE usuarios SET nome=%s, email=%s, setor=%s, funcao=%s, 
             nivel_acesso=%s, saldo_ferias=%s WHERE id=%s
         """, (nome, email, setor, funcao, nivel_acesso, saldo_ferias, user_id))
+    
+    def inativar_usuario(self, user_id):
+        """Inativa usuário (não exclui, apenas marca como inativo)"""
+        return self._execute_query("UPDATE usuarios SET ativo = false WHERE id = %s", (user_id,))
+    
+    def ativar_usuario(self, user_id):
+        """Reativa usuário"""
+        return self._execute_query("UPDATE usuarios SET ativo = true WHERE id = %s", (user_id,))
     
     def delete_user(self, user_id):
         """Exclui usuário"""
@@ -264,6 +354,284 @@ class SimplePsycopg2:
             return False
         except:
             return False
+    
+    def verificar_renovacao_ano(self, ano):
+        """Verifica se já houve renovação no ano"""
+        result = self._execute_query("SELECT COUNT(*) as count FROM renovacao_saldo WHERE ano = %s", (ano,), fetch=True)
+        return result[0]['count'] > 0 if result else False
+    
+    def backup_saldos_usuarios(self):
+        """Cria backup dos saldos atuais"""
+        return self._execute_query("SELECT id, saldo_ferias FROM usuarios", fetch=True)
+    
+    def renovar_saldo_anual(self, ano, novo_saldo, usuario_responsavel_id, modo_teste=False):
+        """Renova saldo anual de todos os colaboradores"""
+        try:
+            if self.verificar_renovacao_ano(ano):
+                return False, "Já foi realizada renovação para este ano"
+            
+            if modo_teste:
+                # Simular operação
+                usuarios = self._execute_query("SELECT COUNT(*) as count FROM usuarios", fetch=True)
+                total = usuarios[0]['count'] if usuarios else 0
+                return True, f"SIMULAÇÃO: {total} colaboradores receberiam {novo_saldo} dias de saldo"
+            
+            # Backup dos saldos atuais
+            backup_dados = self.backup_saldos_usuarios()
+            
+            with psycopg2.connect(self.conn_str) as conn:
+                with conn.cursor() as cur:
+                    # Buscar todos os usuários
+                    cur.execute("SELECT id, saldo_ferias FROM usuarios")
+                    usuarios = cur.fetchall()
+                    
+                    # Criar registros na tabela saldos_anuais
+                    for usuario in usuarios:
+                        # Inserir saldo do ano atual (se não existir)
+                        cur.execute("""
+                            INSERT INTO saldos_anuais (usuario_id, ano, saldo_inicial, saldo_atual)
+                            VALUES (%s, %s, %s, %s)
+                            ON CONFLICT (usuario_id, ano) DO NOTHING
+                        """, (usuario[0], ano-1, usuario[1], usuario[1]))
+                        
+                        # Criar saldo para o novo ano
+                        cur.execute("""
+                            INSERT INTO saldos_anuais (usuario_id, ano, saldo_inicial, saldo_atual)
+                            VALUES (%s, %s, %s, %s)
+                            ON CONFLICT (usuario_id, ano) DO UPDATE SET
+                            saldo_inicial = %s, saldo_atual = %s
+                        """, (usuario[0], ano, novo_saldo, novo_saldo, novo_saldo, novo_saldo))
+                    
+                    # Atualizar saldo atual na tabela usuarios
+                    cur.execute("UPDATE usuarios SET saldo_ferias = %s", (novo_saldo,))
+                    
+                    # Registrar renovação
+                    cur.execute("""
+                        INSERT INTO renovacao_saldo (ano, saldo_padrao, usuario_responsavel_id, backup_dados)
+                        VALUES (%s, %s, %s, %s)
+                    """, (ano, novo_saldo, usuario_responsavel_id, str(backup_dados)))
+                    
+                    conn.commit()
+                    
+                    total_afetados = len(usuarios)
+                    return True, f"Renovação aplicada! {total_afetados} colaboradores com {novo_saldo} dias para {ano}."
+        except Exception as e:
+            return False, f"Erro na renovação: {str(e)}"
+    
+    def get_historico_renovacoes(self):
+        """Obtém histórico de renovações"""
+        return self._execute_query("""
+            SELECT r.*, u.nome as responsavel_nome 
+            FROM renovacao_saldo r 
+            LEFT JOIN usuarios u ON r.usuario_responsavel_id = u.id 
+            ORDER BY r.ano DESC
+        """, fetch=True)
+    
+    def desfazer_ultima_renovacao(self, usuario_responsavel_id):
+        """Desfaz a última renovação (apenas para emergências)"""
+        try:
+            # Buscar última renovação
+            renovacoes = self._execute_query("""
+                SELECT * FROM renovacao_saldo ORDER BY data_aplicacao DESC LIMIT 1
+            """, fetch=True)
+            
+            if not renovacoes:
+                return False, "Nenhuma renovação encontrada para desfazer"
+            
+            renovacao = renovacoes[0]
+            
+            # Verificar se foi feita hoje (segurança)
+            from datetime import date
+            data_renovacao = renovacao['data_aplicacao'].date()
+            if data_renovacao != date.today():
+                return False, "Só é possível desfazer renovações do mesmo dia"
+            
+            # Restaurar saldos do backup
+            import json
+            try:
+                backup_dados = json.loads(renovacao['backup_dados']) if isinstance(renovacao['backup_dados'], str) else renovacao['backup_dados']
+            except:
+                # Se falhar, tentar eval (fallback)
+                backup_dados = eval(renovacao['backup_dados']) if isinstance(renovacao['backup_dados'], str) else renovacao['backup_dados']
+            
+            with psycopg2.connect(self.conn_str) as conn:
+                with conn.cursor() as cur:
+                    # Restaurar cada saldo
+                    for usuario_backup in backup_dados:
+                        cur.execute(
+                            "UPDATE usuarios SET saldo_ferias = %s WHERE id = %s",
+                            (usuario_backup['saldo_ferias'], usuario_backup['id'])
+                        )
+                    
+                    # Remover registro de renovação
+                    cur.execute("DELETE FROM renovacao_saldo WHERE id = %s", (renovacao['id'],))
+                    
+                    conn.commit()
+                    
+                    return True, "Renovação desfeita com sucesso!"
+        except Exception as e:
+            return False, f"Erro ao desfazer renovação: {str(e)}"
+    
+    def get_estatisticas_saldo(self, ano=None):
+        """Obtém estatísticas dos saldos atuais ou por ano"""
+        if ano:
+            return self._execute_query("""
+                SELECT 
+                    COUNT(*) as total_colaboradores,
+                    AVG(saldo_atual) as saldo_medio,
+                    MIN(saldo_atual) as saldo_minimo,
+                    MAX(saldo_atual) as saldo_maximo
+                FROM saldos_anuais WHERE ano = %s
+            """, (ano,), fetch=True)
+        else:
+            return self._execute_query("""
+                SELECT 
+                    COUNT(*) as total_colaboradores,
+                    AVG(saldo_ferias) as saldo_medio,
+                    MIN(saldo_ferias) as saldo_minimo,
+                    MAX(saldo_ferias) as saldo_maximo
+                FROM usuarios
+            """, fetch=True)
+    
+    def get_saldo_usuario_ano(self, usuario_id, ano):
+        """Obtém saldo de um usuário em um ano específico"""
+        result = self._execute_query("""
+            SELECT saldo_atual FROM saldos_anuais 
+            WHERE usuario_id = %s AND ano = %s
+        """, (usuario_id, ano), fetch=True)
+        return result[0]['saldo_atual'] if result else None
+    
+    def get_historico_saldos_usuario(self, usuario_id):
+        """Obtém histórico de saldos de um usuário por ano"""
+        return self._execute_query("""
+            SELECT ano, saldo_inicial, saldo_atual, data_criacao
+            FROM saldos_anuais 
+            WHERE usuario_id = %s 
+            ORDER BY ano DESC
+        """, (usuario_id,), fetch=True)
+    
+    def get_anos_disponiveis(self):
+        """Obtém lista de anos com saldos registrados"""
+        return self._execute_query("""
+            SELECT DISTINCT ano FROM saldos_anuais ORDER BY ano DESC
+        """, fetch=True)
+    
+    def migrar_saldos_existentes(self):
+        """Migra saldos existentes para a nova estrutura"""
+        try:
+            from datetime import date
+            ano_atual = date.today().year
+            
+            with psycopg2.connect(self.conn_str) as conn:
+                with conn.cursor() as cur:
+                    # Buscar usuários que não têm saldo no ano atual
+                    cur.execute("""
+                        SELECT u.id, u.saldo_ferias 
+                        FROM usuarios u
+                        LEFT JOIN saldos_anuais sa ON u.id = sa.usuario_id AND sa.ano = %s
+                        WHERE sa.id IS NULL
+                    """, (ano_atual,))
+                    
+                    usuarios_sem_saldo = cur.fetchall()
+                    
+                    # Criar registros para o ano atual
+                    for usuario in usuarios_sem_saldo:
+                        cur.execute("""
+                            INSERT INTO saldos_anuais (usuario_id, ano, saldo_inicial, saldo_atual)
+                            VALUES (%s, %s, %s, %s)
+                        """, (usuario[0], ano_atual, usuario[1], usuario[1]))
+                    
+                    conn.commit()
+                    return len(usuarios_sem_saldo)
+        except Exception as e:
+            return 0
+    
+    def criar_aviso(self, titulo, conteudo, autor_id, destinatarios_ids):
+        """Cria um novo aviso e associa aos destinatários"""
+        try:
+            with psycopg2.connect(self.conn_str) as conn:
+                with conn.cursor() as cur:
+                    # Inserir aviso
+                    cur.execute("""
+                        INSERT INTO avisos (titulo, conteudo, autor_id) 
+                        VALUES (%s, %s, %s) RETURNING id
+                    """, (titulo, conteudo, autor_id))
+                    
+                    aviso_id = cur.fetchone()[0]
+                    
+                    # Inserir destinatários
+                    for usuario_id in destinatarios_ids:
+                        cur.execute("""
+                            INSERT INTO avisos_destinatarios (aviso_id, usuario_id) 
+                            VALUES (%s, %s)
+                        """, (aviso_id, usuario_id))
+                    
+                    conn.commit()
+                    return True
+        except Exception as e:
+            return False
+    
+    def get_avisos_usuario(self, usuario_id):
+        """Obtém avisos para um usuário específico"""
+        return self._execute_query("""
+            SELECT a.id, a.titulo, a.conteudo, a.data_criacao, 
+                   u.nome as autor_nome, ad.lido, ad.data_leitura
+            FROM avisos a
+            JOIN avisos_destinatarios ad ON a.id = ad.aviso_id
+            JOIN usuarios u ON a.autor_id = u.id
+            WHERE ad.usuario_id = %s AND a.ativo = true
+            ORDER BY a.data_criacao DESC
+        """, (usuario_id,), fetch=True)
+    
+    def marcar_aviso_lido(self, aviso_id, usuario_id):
+        """Marca um aviso como lido"""
+        return self._execute_query("""
+            UPDATE avisos_destinatarios 
+            SET lido = true, data_leitura = CURRENT_TIMESTAMP 
+            WHERE aviso_id = %s AND usuario_id = %s
+        """, (aviso_id, usuario_id))
+    
+    def get_avisos_admin(self):
+        """Obtém todos os avisos para administração"""
+        return self._execute_query("""
+            SELECT a.id, a.titulo, a.data_criacao, u.nome as autor_nome,
+                   COUNT(ad.id) as total_destinatarios,
+                   COUNT(CASE WHEN ad.lido = true THEN 1 END) as total_lidos
+            FROM avisos a
+            JOIN usuarios u ON a.autor_id = u.id
+            LEFT JOIN avisos_destinatarios ad ON a.id = ad.aviso_id
+            WHERE a.ativo = true
+            GROUP BY a.id, a.titulo, a.data_criacao, u.nome
+            ORDER BY a.data_criacao DESC
+        """, fetch=True)
+    
+    def get_status_leitura_aviso(self, aviso_id):
+        """Obtém status de leitura de um aviso específico"""
+        return self._execute_query("""
+            SELECT u.nome, u.setor, u.funcao, ad.lido, ad.data_leitura
+            FROM avisos_destinatarios ad
+            JOIN usuarios u ON ad.usuario_id = u.id
+            WHERE ad.aviso_id = %s
+            ORDER BY u.nome
+        """, (aviso_id,), fetch=True)
+    
+    def get_matriz_leitura_avisos(self):
+        """Obtém matriz de leitura: colaboradores x avisos"""
+        return self._execute_query("""
+            SELECT 
+                u.nome,
+                u.setor,
+                u.funcao,
+                a.id as aviso_id,
+                a.titulo,
+                COALESCE(ad.lido, false) as lido,
+                ad.data_leitura
+            FROM usuarios u
+            CROSS JOIN avisos a
+            LEFT JOIN avisos_destinatarios ad ON u.id = ad.usuario_id AND a.id = ad.aviso_id
+            WHERE a.ativo = true AND u.ativo = true
+            ORDER BY u.nome, a.data_criacao DESC
+        """, fetch=True)
     
     def close(self):
         pass

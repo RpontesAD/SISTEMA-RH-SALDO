@@ -53,6 +53,25 @@ except:
 
 
 
+# Forçar recriação se houver problema com métodos
+if "users_db" in st.session_state:
+    try:
+        # Testar conexão básica
+        st.session_state.users_db.get_users(incluir_inativos=False)
+    except (TypeError, AttributeError):
+        # Limpar cache se houver erro
+        if "db_conn" in st.session_state:
+            del st.session_state.db_conn
+        if "users_db" in st.session_state:
+            del st.session_state.users_db
+        if "ferias_db" in st.session_state:
+            del st.session_state.ferias_db
+        if "db" in st.session_state:
+            del st.session_state.db
+    except:
+        # Outros erros são normais
+        pass
+
 # Inicializar banco de dados
 if "db_conn" not in st.session_state:
     try:

@@ -25,11 +25,20 @@ def _get_base64_image(image_path):
 
 def main():
     import os
+    
+    # Forçar recriação da conexão do banco se necessário
+    if "users_db" not in st.session_state or not hasattr(st.session_state.users_db, 'get_users'):
+        from .database.simple_psycopg2 import SimplePsycopg2
+        st.session_state.users_db = SimplePsycopg2()
+    
+    # Verificar se a conexão existe
+    if "users_db" not in st.session_state:
+        from .database.simple_psycopg2 import SimplePsycopg2
+        st.session_state.users_db = SimplePsycopg2()
 
     logo_path = "assets/LOGORPONTES-1.png"
 
-
-    create_header("CONSTRUTORA RPONTES", "Sistema de Gestão de Férias - RH", logo_path)
+    create_header("CONSTRUTORA RPONTES", "Sistema de Gestão de Férias - GP", logo_path)
 
     if "user" not in st.session_state:
 
@@ -51,7 +60,7 @@ def main():
                 """
             <div style="text-align: center; margin-bottom: 20px;">
                 <h2>RPONTES</h2>
-                <p style="font-size: 12px; color: #888;">Sistema RH</p>
+                <p style="font-size: 12px; color: #888;">Sistema GP</p>
             </div>
             """,
                 unsafe_allow_html=True,

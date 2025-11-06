@@ -73,7 +73,7 @@ def _menu_minha_area_coordenador():
             column_config={
                 'data_inicio': 'Data Início',
                 'data_fim': 'Data Fim', 
-                'dias_utilizados': 'Dias',
+                'dias_utilizados': 'Dias Aprovados',
                 'status': 'Status'
             },
             use_container_width=True,
@@ -81,12 +81,61 @@ def _menu_minha_area_coordenador():
         )
         
         # Estatísticas das férias
-        dias_aprovados = ferias_df[ferias_df['status'] == 'Aprovado']['dias_utilizados'].sum()
-        st.info(f"Total de dias utilizados: {dias_aprovados} dias")
+        ferias_aprovadas = ferias_df[ferias_df['status'] == 'Aprovado']
+        dias_aprovados = ferias_aprovadas['dias_utilizados'].sum() if not ferias_aprovadas.empty else 0
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Dias Aprovados", f"{dias_aprovados} dias")
+        with col2:
+            st.metric("Saldo Restante", f"{user['saldo_ferias']} dias")
                 
     except Exception as e:
         st.error(f"Erro ao carregar informações pessoais: {str(e)}")
         st.info("Verifique se você possui férias cadastradas no sistema")
+    
+    st.markdown("---")
+    
+    # Seção de Avisos
+    st.markdown("##### Avisos")
+    
+    try:
+        avisos = st.session_state.users_db.get_avisos_usuario(user['id'])
+        
+        if not avisos:
+            st.info("Nenhum aviso disponível no momento.")
+        else:
+            for aviso in avisos:
+                with st.container():
+                    col_aviso, col_status = st.columns([4, 1])
+                    
+                    with col_aviso:
+                        if not aviso['lido']:
+                            st.markdown(f"**🔴 {aviso['titulo']}**")
+                        else:
+                            st.markdown(f"**{aviso['titulo']}**")
+                        
+                        st.write(aviso['conteudo'])
+                        
+                        data_criacao = aviso['data_criacao'].strftime("%d/%m/%Y às %H:%M")
+                        st.caption(f"Por: {aviso['autor_nome']} • {data_criacao}")
+                    
+                    with col_status:
+                        if not aviso['lido']:
+                            if st.button("Marcar como Lido", key=f"lido_{aviso['id']}", type="secondary"):
+                                sucesso = st.session_state.users_db.marcar_aviso_lido(aviso['id'], user['id'])
+                                if sucesso:
+                                    st.rerun()
+                        else:
+                            st.success("Lido")
+                            if aviso['data_leitura']:
+                                data_leitura = aviso['data_leitura'].strftime("%d/%m/%Y")
+                                st.caption(f"em {data_leitura}")
+                    
+                    st.markdown("---")
+    
+    except Exception as e:
+        st.error("Erro ao carregar avisos")
 
 def _menu_setor_coordenador():
     """Relatórios do setor do coordenador"""
@@ -121,13 +170,74 @@ def _menu_setor_coordenador():
             saldo_medio = users_df["saldo_ferias"].mean()
             st.metric("Saldo Médio Setor", f"{saldo_medio:.1f} dias")
 
+        # Obter informações de férias para cada colaborador
+        colaboradores_info = []
+        
+        for _, colaborador in users_df.iterrows():
+            try:
+                ferias_list = st.session_state.ferias_db.get_ferias_usuario(colaborador['id'])
+                
+                # Converter para DataFrame se necessário
+                if isinstance(ferias_list, list):
+                    if ferias_list:
+                        import pandas as pd
+                        ferias_df = pd.DataFrame(ferias_list)
+                    else:
+                        ferias_df = pd.DataFrame()
+                else:
+                    ferias_df = ferias_list if ferias_list is not None else pd.DataFrame()
+                
+                # Calcular estatísticas
+                if not ferias_df.empty:
+                    ferias_aprovadas = ferias_df[ferias_df['status'] == 'Aprovado']
+                    dias_aprovados = ferias_aprovadas['dias_utilizados'].sum() if not ferias_aprovadas.empty else 0
+                    
+                    # Próximas férias aprovadas
+                    from datetime import date
+                    ferias_futuras = ferias_aprovadas[ferias_aprovadas['data_inicio'] >= str(date.today())]
+                    proximas_ferias = ""
+                    if not ferias_futuras.empty:
+                        proxima = ferias_futuras.iloc[0]
+                        inicio = proxima['data_inicio']
+                        fim = proxima['data_fim']
+                        if hasattr(inicio, 'strftime'):
+                            inicio_str = inicio.strftime('%d/%m/%Y')
+                        else:
+                            inicio_str = str(inicio)
+                        if hasattr(fim, 'strftime'):
+                            fim_str = fim.strftime('%d/%m/%Y')
+                        else:
+                            fim_str = str(fim)
+                        proximas_ferias = f"{inicio_str} a {fim_str}"
+                    else:
+                        proximas_ferias = "Nenhuma"
+                else:
+                    dias_aprovados = 0
+                    proximas_ferias = "Nenhuma"
+                
+                colaboradores_info.append({
+                    "Nome": colaborador['nome'],
+                    "Função": colaborador['funcao'],
+                    "Saldo Atual": f"{colaborador['saldo_ferias']} dias",
+                    "Dias Aprovados": f"{dias_aprovados} dias",
+                    "Próximas Férias": proximas_ferias
+                })
+                
+            except Exception as e:
+                colaboradores_info.append({
+                    "Nome": colaborador['nome'],
+                    "Função": colaborador['funcao'],
+                    "Saldo Atual": f"{colaborador['saldo_ferias']} dias",
+                    "Dias Aprovados": "Erro",
+                    "Próximas Férias": "Erro"
+                })
+        
+        # Exibir tabela com informações completas
+        import pandas as pd
+        df_info = pd.DataFrame(colaboradores_info)
+        
         st.dataframe(
-            users_df[["nome", "email", "funcao", "saldo_ferias"]].rename(columns={
-                "nome": "Nome",
-                "email": "Email", 
-                "funcao": "Função",
-                "saldo_ferias": "Saldo Atual"
-            }),
+            df_info,
             use_container_width=True,
             hide_index=True
         )

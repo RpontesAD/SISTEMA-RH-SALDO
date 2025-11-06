@@ -28,6 +28,7 @@ streamlit run app.py
 
 ### ✅ **Gerenciamento de Férias**
 - **Cadastro:** Sempre como "Pendente" para posterior aprovação
+- **Validação de saldo:** Não permite cadastrar férias acima do saldo disponível
 - **Aprovação:** Desconta automaticamente do saldo do colaborador
 - **Cancelamento:** Devolve dias ao saldo 
 - **Exclusão:** Remove registro e ajusta saldo se necessário
@@ -36,6 +37,8 @@ streamlit run app.py
 ### ✅ **Gerenciamento de Colaboradores**
 - Edição de dados pessoais e profissionais
 - Ajuste manual de saldo de férias
+- **Inativação de colaboradores:** Preserva dados sem permitir acesso
+- **Reativação:** Restaura acesso de colaboradores inativos
 - Exclusão de colaboradores (com confirmação)
 - Filtros avançados por nome, setor, função e saldo
 
@@ -126,7 +129,8 @@ Gestão RH/
 │   └── .keep                # Manter diretório
 ├── logs/                    # Logs do sistema
 ├── tests/                   # Testes automatizados
-└── docs/                    # Documentação
+├── docs/                    # Documentação
+└── renovacao_anual_backup/  # Backup da renovação anual
 ```
 
 ## 🔧 Solução de Problemas
@@ -159,6 +163,9 @@ O sistema usa PostgreSQL (Supabase) como banco persistente. Se houver problemas:
 - ✅ Aprovação/Cancelamento de Férias
 - ✅ Dashboard e Relatórios
 - ✅ Controle de Saldo
+- ✅ **Validação de Saldo** (NOVO)
+- ✅ **Inativação de Colaboradores** (NOVO)
+- ✅ **Painéis Melhorados** (NOVO)
 - ✅ Backup Automático
 
 ## 🎯 Guia de Uso Rápido
@@ -174,6 +181,14 @@ O sistema usa PostgreSQL (Supabase) como banco persistente. Se houver problemas:
 
 Para suporte técnico, consulte a documentação em `docs/` ou verifique os logs em `logs/`.
 
+## 💾 Backup de Funcionalidades
+
+### **Renovação Anual de Saldo (Removida)**
+Funcionalidade completa de renovação anual foi desenvolvida e está disponível em:
+- **Pasta:** `renovacao_anual_backup/`
+- **Status:** Backup completo e funcional
+- **Pode ser reativada:** A qualquer momento
+
 ---
 
-**Última atualização:** Novembro 2025 - Sistema migrado para PostgreSQL (Supabase) e totalmente funcional
+**Última atualização:** Dezembro 2025 - Implementadas melhorias: validação de saldo, painéis detalhados e inativação de colaboradores 
