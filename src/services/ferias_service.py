@@ -393,17 +393,17 @@ class FeriasService:
             Dict com informações de saldo
         """
         try:
-            # Obter dados do usuário
-            users_list = self.users_db.get_users()
+            # Obter dados do usuário diretamente do banco (sem cache)
+            users_list = self.users_db._execute_query(
+                "SELECT * FROM usuarios WHERE id = %s", 
+                (user_id,), 
+                fetch=True
+            )
             
-            # Converter lista para DataFrame se necessário
-            if isinstance(users_list, list):
-                import pandas as pd
-                users_df = pd.DataFrame(users_list)
-            else:
-                users_df = users_list
+            if not users_list:
+                raise Exception(f"Usuário {user_id} não encontrado")
                 
-            user_data = users_df[users_df["id"] == user_id].iloc[0]
+            user_data = users_list[0]
             saldo_atual = user_data["saldo_ferias"]
             
             # Obter férias pendentes
@@ -416,10 +416,19 @@ class FeriasService:
                 else:
                     import pandas as pd
                     ferias_df = pd.DataFrame(ferias_list)
-                    ferias_pendentes = ferias_df[ferias_df["status"] == "Pendente"]
+                    ferias_pendentes = ferias_df[
+                        (ferias_df["status"] == "Pendente") | 
+                        (ferias_df["status"].str.lower() == "pendente")
+                    ]
             else:
                 ferias_df = ferias_list
-                ferias_pendentes = ferias_df[ferias_df["status"] == "Pendente"] if not ferias_df.empty else []
+                if not ferias_df.empty:
+                    ferias_pendentes = ferias_df[
+                        (ferias_df["status"] == "Pendente") | 
+                        (ferias_df["status"].str.lower() == "pendente")
+                    ]
+                else:
+                    ferias_pendentes = []
             
             # Calcular usando RegrasSaldo
             pendentes_list = ferias_pendentes.to_dict('records') if len(ferias_pendentes) > 0 else []
@@ -469,7 +478,13 @@ class FeriasService:
                 if ferias_df.empty:
                     return 0
             
-            ferias_aprovadas = ferias_df[ferias_df["status"] == "Aprovado"]
+            # Verificar diferentes variações do status aprovado
+            ferias_aprovadas = ferias_df[
+                (ferias_df["status"] == "Aprovado") | 
+                (ferias_df["status"] == "Aprovada") |
+                (ferias_df["status"].str.lower() == "aprovado") |
+                (ferias_df["status"].str.lower() == "aprovada")
+            ]
             if ferias_aprovadas.empty:
                 return 0
             

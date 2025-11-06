@@ -73,7 +73,7 @@ def _exibir_informacoes_saldo(service: FeriasService, user_id: int):
         return
     
     # Exibir métricas
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         st.metric(
@@ -85,38 +85,22 @@ def _exibir_informacoes_saldo(service: FeriasService, user_id: int):
     with col2:
         if saldo_info["tem_pendencias"]:
             st.metric(
-                "Dias Pendentes", 
+                "Dias Pendentes de Aprovação", 
                 f"{saldo_info['dias_pendentes']} dias",
                 help="Dias em férias pendentes de aprovação"
             )
         else:
             st.metric(
-                "Dias Pendentes", 
+                "Dias Pendentes de Aprovação", 
                 "0 dias",
                 help="Nenhuma férias pendente"
             )
     
     with col3:
-        delta = saldo_info["saldo_se_aprovadas"] - saldo_info["saldo_atual"]
-        if delta < 0:
-            st.metric(
-                "Saldo se Aprovadas", 
-                f"{saldo_info['saldo_se_aprovadas']} dias",
-                delta=f"{delta} dias",
-                help="Saldo após aprovação das pendentes"
-            )
-        else:
-            st.metric(
-                "Saldo se Aprovadas", 
-                f"{saldo_info['saldo_se_aprovadas']} dias",
-                help="Saldo após aprovação das pendentes"
-            )
-    
-    with col4:
-        # Calcular dias gozados apenas das férias aprovadas
+        # Calcular dias aprovados apenas das férias aprovadas
         dias_aprovados = service.obter_dias_aprovados(user_id)
         st.metric(
-            "Dias Gozados", 
+            "Dias Aprovados", 
             f"{dias_aprovados} dias",
             help="Dias de férias aprovadas e utilizadas"
         )
@@ -241,7 +225,7 @@ def _interface_historico_ferias(service: FeriasService, user_id: int):
         column_config={
             'data_inicio': 'Data Início',
             'data_fim': 'Data Fim',
-            'dias_utilizados': 'Dias Gozados',
+            'dias_utilizados': 'Dias Aprovados',
             'status': 'Status'
         },
         use_container_width=True,
@@ -291,6 +275,9 @@ def _interface_gerenciar_status(service: FeriasService, user_id: int):
                     resultado = service.aprovar_ferias(ferias['id'])
                     if resultado["sucesso"]:
                         st.success(resultado["mensagem"])
+                        # Forçar limpeza de cache e atualização
+                        if 'saldo_cache' in st.session_state:
+                            del st.session_state['saldo_cache']
                         st.rerun()
                     else:
                         st.error(resultado["erro"])

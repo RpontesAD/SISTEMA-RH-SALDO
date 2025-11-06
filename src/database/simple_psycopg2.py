@@ -163,7 +163,9 @@ class SimplePsycopg2:
     def add_ferias(self, usuario_id, data_inicio, data_fim, status="Pendente", usuario_nivel="colaborador"):
         """Adiciona férias"""
         try:
-            dias_utilizados = (data_fim - data_inicio).days + 1
+            # Calcular apenas dias úteis (sem fins de semana)
+            from ..utils.calculos import calcular_dias_uteis
+            dias_utilizados = calcular_dias_uteis(data_inicio, data_fim)
             
             with psycopg2.connect(self.conn_str) as conn:
                 with conn.cursor() as cur:
@@ -174,7 +176,7 @@ class SimplePsycopg2:
                     """, (usuario_id, data_inicio, data_fim, dias_utilizados, status))
                     
                     # Atualizar saldo se aprovada
-                    if status == "Aprovada":
+                    if status.lower() in ["aprovado", "aprovada"]:
                         cur.execute("""
                             UPDATE usuarios SET saldo_ferias = saldo_ferias - %s WHERE id = %s
                         """, (dias_utilizados, usuario_id))
@@ -214,11 +216,21 @@ class SimplePsycopg2:
                         # Atualizar status
                         cur.execute("UPDATE ferias SET status = %s WHERE id = %s", (novo_status, ferias_id))
                         
-                        # Ajustar saldo
-                        if status_atual != "Aprovada" and novo_status == "Aprovada":
+                        # Ajustar saldo - aceitar tanto "Aprovado" quanto "Aprovada"
+                        status_atual_lower = status_atual.lower() if status_atual else ""
+                        novo_status_lower = novo_status.lower() if novo_status else ""
+                        
+
+                        
+                        # Se mudou de não-aprovado para aprovado
+                        if status_atual_lower not in ["aprovado", "aprovada"] and novo_status_lower in ["aprovado", "aprovada"]:
                             cur.execute("UPDATE usuarios SET saldo_ferias = saldo_ferias - %s WHERE id = %s", (dias_utilizados, usuario_id))
-                        elif status_atual == "Aprovada" and novo_status != "Aprovada":
+                            print(f"Descontando {dias_utilizados} dias do usuário {usuario_id}")
+                        # Se mudou de aprovado para não-aprovado
+                        elif status_atual_lower in ["aprovado", "aprovada"] and novo_status_lower not in ["aprovado", "aprovada"]:
                             cur.execute("UPDATE usuarios SET saldo_ferias = saldo_ferias + %s WHERE id = %s", (dias_utilizados, usuario_id))
+                            print(f"Devolvendo {dias_utilizados} dias ao usuário {usuario_id}")
+
                         
                         conn.commit()
                         return True
@@ -244,7 +256,7 @@ class SimplePsycopg2:
                         cur.execute("DELETE FROM ferias WHERE id = %s", (ferias_id,))
                         
                         # Se estava aprovada, devolver ao saldo
-                        if status == "Aprovada":
+                        if status.lower() in ["aprovado", "aprovada"]:
                             cur.execute("UPDATE usuarios SET saldo_ferias = saldo_ferias + %s WHERE id = %s", (dias_utilizados, usuario_id))
                         
                         conn.commit()
