@@ -403,10 +403,10 @@ def _confirmacao_inativacao(user_data):
     st.markdown("---")
     st.markdown("### Inativar Colaborador")
     
-    st.warning(f"⚠️ **Inativar colaborador:** {user_data['nome']}")
-    st.info("💾 **Dados preservados:** Todos os dados e histórico serão mantidos")
-    st.info("🚫 **Efeito:** Colaborador não aparecerá nas listas principais e não poderá fazer login")
-    st.success("🔄 **Reversível:** Pode ser reativado a qualquer momento")
+    st.warning(f"**Inativar colaborador:** {user_data['nome']}")
+    st.info("**Dados preservados:** Todos os dados e histórico serão mantidos")
+    st.info("**Efeito:** Colaborador não aparecerá nas listas principais e não poderá fazer login")
+    st.success("**Reversível:** Pode ser reativado a qualquer momento")
     
     with st.form("form_inativacao"):
         col_confirm, col_cancel = st.columns(2)
@@ -418,8 +418,8 @@ def _confirmacao_inativacao(user_data):
                     sucesso = st.session_state.users_db.inativar_usuario(user_id)
                     
                     if sucesso:
-                        st.success(f"✅ {user_data['nome']} foi inativado com sucesso!")
-                        st.info("💾 Todos os dados foram preservados")
+                        st.success(f"{user_data['nome']} foi inativado com sucesso!")
+                        st.info("Todos os dados foram preservados")
                         _limpar_sessao()
                         st.rerun()
                     else:
@@ -437,9 +437,9 @@ def _confirmacao_reativacao(user_data):
     st.markdown("---")
     st.markdown("### Reativar Colaborador")
     
-    st.success(f"✅ **Reativar colaborador:** {user_data['nome']}")
-    st.info("🔄 **Efeito:** Colaborador voltará a aparecer nas listas e poderá fazer login")
-    st.info("💾 **Dados preservados:** Todos os dados e histórico foram mantidos")
+    st.success(f"**Reativar colaborador:** {user_data['nome']}")
+    st.info("**Efeito:** Colaborador voltará a aparecer nas listas e poderá fazer login")
+    st.info("**Dados preservados:** Todos os dados e histórico foram mantidos")
     
     with st.form("form_reativacao"):
         col_confirm, col_cancel = st.columns(2)
@@ -451,8 +451,8 @@ def _confirmacao_reativacao(user_data):
                     sucesso = st.session_state.users_db.ativar_usuario(user_id)
                     
                     if sucesso:
-                        st.success(f"✅ {user_data['nome']} foi reativado com sucesso!")
-                        st.info("🔄 Colaborador pode fazer login novamente")
+                        st.success(f"{user_data['nome']} foi reativado com sucesso!")
+                        st.info("Colaborador pode fazer login novamente")
                         _limpar_sessao()
                         st.rerun()
                     else:

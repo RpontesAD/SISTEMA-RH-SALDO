@@ -2,6 +2,8 @@
 
 Sistema interno para controle de férias dos colaboradores da Construtora RPONTES.
 
+**Gestão de Pessoas** - Sistema completo de administração de recursos humanos.
+
 ## 🚀 Como Executar
 
 ### 1. Instalar Dependências
@@ -41,18 +43,33 @@ streamlit run app.py
 - **Reativação:** Restaura acesso de colaboradores inativos
 - Exclusão de colaboradores (com confirmação)
 - Filtros avançados por nome, setor, função e saldo
+- **Controle de permissões:** Usuários só editam email/senha, master edita tudo
 
 ### ✅ **Relatórios**
 - Relatórios por setor e colaborador
 - Informações de saldo em tempo real
 
+### ✅ **Sistema de Avisos**
+- **Publicação:** Administradores podem criar avisos para grupos específicos
+- **Filtragem:** Avisos por setor, função ou colaboradores específicos
+- **Controle de leitura:** Usuários podem ocultar avisos (admin vê status)
+- **Interface limpa:** Design minimalista sem emojis
+
+### ✅ **Renovação Anual de Saldo**
+- **Renovação automática:** Adição cumulativa de saldo anual
+- **Preview:** Visualização antes da aplicação
+- **Reset:** Reversão da renovação se necessário
+- **Histórico:** Controle de renovações aplicadas
+
 ## 👥 Níveis de Acesso
 
-### 🔑 **Master (RH)**
+### 🔑 **Master (Gestão de Pessoas)**
 - Acesso completo ao sistema
 - Pode gerenciar todos os colaboradores
 - Aprovação de férias sem restrições
 - Relatórios gerais
+- Publicação de avisos
+- Renovação anual de saldo
 
 ### 🏢 **Diretoria**
 - Visualização de relatórios consolidados
@@ -73,7 +90,7 @@ streamlit run app.py
 
 - Administração
 - Assistência Técnica
-- Gestão de Pessoas (RH)
+- Gestão de Pessoas
 - Financeiro
 - Suprimentos
 - Engenharia
@@ -109,7 +126,8 @@ streamlit run app.py
 - **Banco de Dados:** PostgreSQL (Supabase)
 - **Criptografia:** bcrypt
 - **Análise de Dados:** Pandas
-- **Conexão:** psycopg2
+- **Conexão:** psycopg2-binary
+- **Deploy:** Streamlit Cloud
 
 ## 📁 Estrutura do Projeto
 
@@ -152,6 +170,7 @@ O sistema usa PostgreSQL (Supabase) como banco persistente. Se houver problemas:
 2. Confirme se a conexão com o Supabase está ativa
 3. Verifique os logs do sistema em `logs/`
 4. Use as credenciais padrão: admin@rpontes.com / admin123
+5. Conexão usa psycopg2 com URL encoding para senhas especiais
 
 ## 📊 Status do Sistema
 
@@ -163,9 +182,12 @@ O sistema usa PostgreSQL (Supabase) como banco persistente. Se houver problemas:
 - ✅ Aprovação/Cancelamento de Férias
 - ✅ Dashboard e Relatórios
 - ✅ Controle de Saldo
-- ✅ **Validação de Saldo** (NOVO)
-- ✅ **Inativação de Colaboradores** (NOVO)
-- ✅ **Painéis Melhorados** (NOVO)
+- ✅ **Validação de Saldo**
+- ✅ **Inativação de Colaboradores**
+- ✅ **Painéis Melhorados**
+- ✅ **Sistema de Avisos** (NOVO)
+- ✅ **Renovação Anual de Saldo** (NOVO)
+- ✅ **Migração PostgreSQL** (NOVO)
 - ✅ Backup Automático
 
 ## 🎯 Guia de Uso Rápido
@@ -176,6 +198,8 @@ O sistema usa PostgreSQL (Supabase) como banco persistente. Se houver problemas:
 4. **Aprove/Cancele férias** na aba "Gerenciar Férias" > "Gerenciar Status"
 5. **Ajuste saldos** na aba "Gerenciar Colaboradores" se necessário
 6. **Visualize relatórios** na aba "Dashboard"
+7. **Publique avisos** na aba "Avisos" (apenas master)
+8. **Renove saldos** anualmente na aba "Renovação Saldo"
 
 ## Sistema desenvolvido para uso interno da **Construtora RPONTES**.
 
@@ -191,4 +215,4 @@ Funcionalidade completa de renovação anual foi desenvolvida e está disponíve
 
 ---
 
-**Última atualização:** Dezembro 2025 - Implementadas melhorias: validação de saldo, painéis detalhados e inativação de colaboradores 
+**Última atualização:** Novembro 2025 - Sistema completo com PostgreSQL, avisos, renovação de saldo e interface "Gestão de Pessoas" 

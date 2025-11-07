@@ -14,7 +14,7 @@
 
 ## 👥 Funcionalidades por Nível de Acesso
 
-### 🔑 RH (Master) - Acesso Total
+### 🔑 Gestão de Pessoas (Master) - Acesso Total
 
 #### Cadastrar Colaborador
 1. **Acesse** a aba "Cadastrar Colaborador"
@@ -216,7 +216,7 @@
 ## 📞 Suporte
 
 ### Contatos
-- **RH:** rh@rpontes.com
+- **Gestão de Pessoas:** gp@rpontes.com
 - **TI:** ti@rpontes.com
 - **Telefone:** (XX) XXXX-XXXX
 
@@ -234,5 +234,5 @@ Ao reportar problemas, informe:
 
 ---
 
-**Manual atualizado em:** Novembro 2024  
-**Versão do Sistema:** 1.3.0
+**Manual atualizado em:** Dezembro 2024  
+**Versão do Sistema:** 2.0.0

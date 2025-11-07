@@ -5,7 +5,8 @@
 ### Stack Tecnológico
 - **Frontend:** Streamlit 1.28+
 - **Backend:** Python 3.8+
-- **Banco de Dados:** SQLite 3
+- **Banco de Dados:** PostgreSQL (Supabase)
+- **Conexão:** psycopg2-binary
 - **Autenticação:** bcrypt 4.0+
 - **Deploy:** Streamlit Cloud
 - **Versionamento:** Git/GitHub
@@ -87,15 +88,21 @@ class RegrasSaldo:
 # - Transações
 # - Mapeamento objeto-relacional
 
-class SQLiteDatabase:
+class SimplePsycopg2Database:
     def authenticate_user(self, email, senha):
-        # Autenticação com bcrypt
+        # Autenticação com bcrypt via PostgreSQL
         
     def create_user(self, dados):
-        # Criação de usuário
+        # Criação de usuário com ativo=True
         
     def add_ferias(self, dados):
-        # Cadastro de férias
+        # Cadastro de férias com validação de saldo
+        
+    def inativar_usuario(self, user_id):
+        # Inativação preservando dados
+        
+    def create_aviso(self, dados):
+        # Sistema de avisos com destinatários
 ```
 
 ## 🗄️ Modelo de Dados
@@ -114,6 +121,17 @@ usuarios (1) -----> (N) ferias
     saldo_ferias
     data_cadastro
     data_admissao
+    ativo               -- NOVO: controle inativação
+
+avisos (1) -----> (N) avisos_destinatarios
+    |                   |
+    id                  aviso_id
+    titulo              usuario_id
+    conteudo            lido
+    autor_id            data_leitura
+    data_criacao        oculto
+    destinatarios_tipo
+    destinatarios_ids
 ```
 
 ### Relacionamentos
@@ -123,11 +141,15 @@ usuarios (1) -----> (N) ferias
 
 ### Índices
 ```sql
--- Índices para performance
+-- Índices para performance PostgreSQL
 CREATE INDEX idx_usuarios_email ON usuarios(email);
+CREATE INDEX idx_usuarios_ativo ON usuarios(ativo);
 CREATE INDEX idx_ferias_usuario ON ferias(usuario_id);
 CREATE INDEX idx_ferias_status ON ferias(status);
 CREATE INDEX idx_ferias_data ON ferias(data_inicio, data_fim);
+CREATE INDEX idx_avisos_autor ON avisos(autor_id);
+CREATE INDEX idx_avisos_dest_usuario ON avisos_destinatarios(usuario_id);
+CREATE INDEX idx_avisos_dest_aviso ON avisos_destinatarios(aviso_id);
 ```
 
 ## 🔐 Segurança
@@ -223,15 +245,18 @@ def get_ferias_by_period(start_date, end_date):
 
 ### Variáveis de Ambiente
 ```python
-# config_secure.py
+# Configurações PostgreSQL (Supabase)
 import os
-from dotenv import load_dotenv
+from urllib.parse import quote_plus
 
-load_dotenv()
+# Conexão PostgreSQL
+DATABASE_URL = os.getenv('DATABASE_URL')
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-# Configurações do banco
-USE_MYSQL = os.getenv('USE_MYSQL', 'False').lower() == 'true'
-SQLITE_PATH = os.getenv('SQLITE_PATH', 'data/rpontes_rh.db')
+# URL encoding para senhas especiais
+def encode_password(password):
+    return quote_plus(password)
 
 # Configurações de segurança
 SECRET_KEY = os.getenv('SECRET_KEY', 'default-key')
@@ -264,8 +289,9 @@ base = "dark"
 primaryColor = "#ff6b6b"
 
 # secrets.toml (não commitado)
-USE_MYSQL = false
-SQLITE_PATH = "data/rpontes_rh.db"
+DATABASE_URL = "postgresql://user:pass@host:port/db"
+SUPABASE_URL = "https://xxx.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
 ## 🧪 Testes
@@ -297,7 +323,7 @@ class TestRegrasFerias(unittest.TestCase):
 # tests/test_integration.py
 class TestIntegration(unittest.TestCase):
     def setUp(self):
-        self.db = SQLiteDatabase(':memory:')  # Banco em memória
+        self.db = SimplePsycopg2Database()  # PostgreSQL de teste
         
     def test_fluxo_completo_ferias(self):
         # 1. Criar usuário
@@ -389,32 +415,38 @@ def monitor_performance(func):
 
 ### Backup Automático
 ```python
-# Backup automático do SQLite
-import shutil
+# Backup automático do PostgreSQL
+import subprocess
 from datetime import datetime
 
 def backup_database():
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup_path = f"backups/rpontes_rh_{timestamp}.db"
+    backup_path = f"backups/rpontes_rh_{timestamp}.sql"
     
     os.makedirs('backups', exist_ok=True)
-    shutil.copy2('data/rpontes_rh.db', backup_path)
     
-    logger.info(f"Backup criado: {backup_path}")
+    # pg_dump para PostgreSQL
+    cmd = f"pg_dump {DATABASE_URL} > {backup_path}"
+    subprocess.run(cmd, shell=True, check=True)
+    
+    logger.info(f"Backup PostgreSQL criado: {backup_path}")
     return backup_path
 
-# Agendar backup diário
-import schedule
-
-schedule.every().day.at("02:00").do(backup_database)
+# Backup via Supabase (recomendado)
+def backup_supabase():
+    # Supabase oferece backups automáticos
+    # Configurar via dashboard do Supabase
+    pass
 ```
 
 ### Recuperação de Dados
 ```python
 def restore_database(backup_path):
     if os.path.exists(backup_path):
-        shutil.copy2(backup_path, 'data/rpontes_rh.db')
-        logger.info(f"Banco restaurado de: {backup_path}")
+        # Restaurar PostgreSQL via psql
+        cmd = f"psql {DATABASE_URL} < {backup_path}"
+        subprocess.run(cmd, shell=True, check=True)
+        logger.info(f"PostgreSQL restaurado de: {backup_path}")
         return True
     return False
 ```
@@ -511,7 +543,9 @@ def health_check():
 ### Documentação das Bibliotecas
 - **Streamlit:** https://docs.streamlit.io/
 - **Pandas:** https://pandas.pydata.org/docs/
-- **SQLite:** https://docs.python.org/3/library/sqlite3.html
+- **PostgreSQL:** https://www.postgresql.org/docs/
+- **psycopg2:** https://www.psycopg.org/docs/
+- **Supabase:** https://supabase.com/docs
 - **bcrypt:** https://pypi.org/project/bcrypt/
 
 ### Padrões e Boas Práticas
@@ -522,5 +556,5 @@ def health_check():
 
 ---
 
-**Manual Técnico atualizado em:** Novembro 2024  
-**Versão do Sistema:** 1.3.0
+**Manual Técnico atualizado em:** Dezembro 2024  
+**Versão do Sistema:** 2.0.0

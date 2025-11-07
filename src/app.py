@@ -5,6 +5,7 @@ from .config import (
 )
 from .utils.constants import SETORES, FUNCOES, NIVEIS_ACESSO  
 from .utils.ui_components import create_header  
+from .utils.button_styles import apply_button_styles
 from .auth import login_page  
 from .menus import menu_rh, menu_diretoria, menu_coordenador, menu_colaborador
 import sys
@@ -25,6 +26,9 @@ def _get_base64_image(image_path):
 
 def main():
     import os
+    
+    # Aplicar estilos dos botões
+    apply_button_styles()
     
     # Forçar recriação da conexão do banco se necessário
     if "users_db" not in st.session_state or not hasattr(st.session_state.users_db, 'get_users'):
