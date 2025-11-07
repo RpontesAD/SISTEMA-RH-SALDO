@@ -4,6 +4,7 @@ from .gerenciar_ferias import menu_gerenciar_ferias
 from .gerenciar_colaboradores import menu_gerenciar_colaboradores
 from .dashboard import menu_dashboard
 from .avisos import menu_avisos
+from .renovacao_saldo import menu_renovacao_saldo
 
 from .menu_colaborador import menu_colaborador
 from .menu_diretoria import menu_diretoria
@@ -14,11 +15,12 @@ def menu_rh():
     """Menu principal para RH (Master)"""
     st.markdown("### Painel GP - Acesso Master")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "Cadastrar Colaborador",
         "Gerenciar Férias", 
         "Gerenciar Colaboradores",
         "Avisos",
+        "Renovação Saldo",
         "Relatórios"
     ])
 
@@ -35,6 +37,9 @@ def menu_rh():
         menu_avisos()
 
     with tab5:
+        menu_renovacao_saldo()
+    
+    with tab6:
         menu_dashboard()
 
 # Funções movidas para arquivos separados

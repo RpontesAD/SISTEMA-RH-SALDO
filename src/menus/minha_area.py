@@ -40,9 +40,9 @@ def menu_minha_area():
                     with col_aviso:
                         # Título com indicador de não lido
                         if not aviso['lido']:
-                            st.markdown(f"**🔴 {aviso['titulo']}**")
+                            st.markdown(f"{aviso['titulo']}")
                         else:
-                            st.markdown(f"**{aviso['titulo']}**")
+                            st.markdown(f"{aviso['titulo']}")
                         
                         # Conteúdo
                         st.write(aviso['conteudo'])

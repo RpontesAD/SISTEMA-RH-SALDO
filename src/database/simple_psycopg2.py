@@ -70,16 +70,20 @@ class SimplePsycopg2:
             )
         """)
         
-        # Criar tabela renovacao_saldo
+        # Criar tabela renovacao_saldo (sem backup)
         self._execute_query("""
             CREATE TABLE IF NOT EXISTS renovacao_saldo (
                 id SERIAL PRIMARY KEY,
                 ano INTEGER UNIQUE NOT NULL,
                 saldo_padrao INTEGER NOT NULL,
                 data_aplicacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                usuario_responsavel_id INTEGER REFERENCES usuarios(id),
-                backup_dados TEXT
+                usuario_responsavel_id INTEGER REFERENCES usuarios(id)
             )
+        """)
+        
+        # Remover coluna backup_dados se existir
+        self._execute_query("""
+            ALTER TABLE renovacao_saldo DROP COLUMN IF EXISTS backup_dados
         """)
         
         # Criar tabela saldos_anuais
@@ -385,63 +389,51 @@ class SimplePsycopg2:
         result = self._execute_query("SELECT COUNT(*) as count FROM renovacao_saldo WHERE ano = %s", (ano,), fetch=True)
         return result[0]['count'] > 0 if result else False
     
-    def backup_saldos_usuarios(self):
-        """Cria backup dos saldos atuais"""
-        return self._execute_query("SELECT id, saldo_ferias FROM usuarios", fetch=True)
+
     
-    def renovar_saldo_anual(self, ano, novo_saldo, usuario_responsavel_id, modo_teste=False):
-        """Renova saldo anual de todos os colaboradores"""
+    def renovar_saldo_anual_simples(self, ano, saldo_adicional, usuario_responsavel_id):
+        """Renova saldo anual - versão simplificada sem backup"""
         try:
-            if self.verificar_renovacao_ano(ano):
+            # Verificar se já existe renovação para o ano
+            result = self._execute_query("SELECT COUNT(*) as count FROM renovacao_saldo WHERE ano = %s", (ano,), fetch=True)
+            if result and result[0]['count'] > 0:
                 return False, "Já foi realizada renovação para este ano"
             
-            if modo_teste:
-                # Simular operação
-                usuarios = self._execute_query("SELECT COUNT(*) as count FROM usuarios", fetch=True)
-                total = usuarios[0]['count'] if usuarios else 0
-                return True, f"SIMULAÇÃO: {total} colaboradores receberiam {novo_saldo} dias de saldo"
+            # Atualizar saldos
+            success1 = self._execute_query(
+                "UPDATE usuarios SET saldo_ferias = saldo_ferias + %s WHERE ativo = true",
+                (saldo_adicional,)
+            )
             
-            # Backup dos saldos atuais
-            backup_dados = self.backup_saldos_usuarios()
+            if not success1:
+                return False, "Erro ao atualizar saldos"
             
-            with psycopg2.connect(self.conn_str) as conn:
-                with conn.cursor() as cur:
-                    # Buscar todos os usuários
-                    cur.execute("SELECT id, saldo_ferias FROM usuarios")
-                    usuarios = cur.fetchall()
-                    
-                    # Criar registros na tabela saldos_anuais
-                    for usuario in usuarios:
-                        # Inserir saldo do ano atual (se não existir)
-                        cur.execute("""
-                            INSERT INTO saldos_anuais (usuario_id, ano, saldo_inicial, saldo_atual)
-                            VALUES (%s, %s, %s, %s)
-                            ON CONFLICT (usuario_id, ano) DO NOTHING
-                        """, (usuario[0], ano-1, usuario[1], usuario[1]))
-                        
-                        # Criar saldo para o novo ano
-                        cur.execute("""
-                            INSERT INTO saldos_anuais (usuario_id, ano, saldo_inicial, saldo_atual)
-                            VALUES (%s, %s, %s, %s)
-                            ON CONFLICT (usuario_id, ano) DO UPDATE SET
-                            saldo_inicial = %s, saldo_atual = %s
-                        """, (usuario[0], ano, novo_saldo, novo_saldo, novo_saldo, novo_saldo))
-                    
-                    # Atualizar saldo atual na tabela usuarios
-                    cur.execute("UPDATE usuarios SET saldo_ferias = %s", (novo_saldo,))
-                    
-                    # Registrar renovação
-                    cur.execute("""
-                        INSERT INTO renovacao_saldo (ano, saldo_padrao, usuario_responsavel_id, backup_dados)
-                        VALUES (%s, %s, %s, %s)
-                    """, (ano, novo_saldo, usuario_responsavel_id, str(backup_dados)))
-                    
-                    conn.commit()
-                    
-                    total_afetados = len(usuarios)
-                    return True, f"Renovação aplicada! {total_afetados} colaboradores com {novo_saldo} dias para {ano}."
+            # Registrar renovação
+            success2 = self._execute_query(
+                "INSERT INTO renovacao_saldo (ano, saldo_padrao, usuario_responsavel_id) VALUES (%s, %s, %s)",
+                (ano, saldo_adicional, usuario_responsavel_id)
+            )
+            
+            if not success2:
+                return False, "Erro ao registrar renovação"
+            
+            # Contar usuários
+            usuarios = self._execute_query("SELECT COUNT(*) as count FROM usuarios WHERE ativo = true", fetch=True)
+            total = usuarios[0]['count'] if usuarios else 0
+            
+            return True, f"Renovação aplicada! {total} colaboradores receberam +{saldo_adicional} dias para {ano}."
+            
         except Exception as e:
             return False, f"Erro na renovação: {str(e)}"
+    
+    def renovar_saldo_anual(self, ano, saldo_adicional, usuario_responsavel_id, modo_teste=False):
+        """Método compatível que chama a versão simplificada"""
+        if modo_teste:
+            usuarios = self._execute_query("SELECT COUNT(*) as count FROM usuarios WHERE ativo = true", fetch=True)
+            total = usuarios[0]['count'] if usuarios else 0
+            return True, f"SIMULAÇÃO: {total} colaboradores receberiam +{saldo_adicional} dias somados ao saldo atual"
+        
+        return self.renovar_saldo_anual_simples(ano, saldo_adicional, usuario_responsavel_id)
     
     def get_historico_renovacoes(self):
         """Obtém histórico de renovações"""
@@ -453,17 +445,19 @@ class SimplePsycopg2:
         """, fetch=True)
     
     def desfazer_ultima_renovacao(self, usuario_responsavel_id):
-        """Desfaz a última renovação (apenas para emergências)"""
+        """Desfaz a última renovação subtraindo o valor adicionado"""
         try:
             # Buscar última renovação
-            renovacoes = self._execute_query("""
-                SELECT * FROM renovacao_saldo ORDER BY data_aplicacao DESC LIMIT 1
-            """, fetch=True)
+            renovacoes = self._execute_query(
+                "SELECT * FROM renovacao_saldo ORDER BY data_aplicacao DESC LIMIT 1",
+                fetch=True
+            )
             
             if not renovacoes:
                 return False, "Nenhuma renovação encontrada para desfazer"
             
             renovacao = renovacoes[0]
+            saldo_adicionado = renovacao['saldo_padrao']
             
             # Verificar se foi feita hoje (segurança)
             from datetime import date
@@ -471,29 +465,26 @@ class SimplePsycopg2:
             if data_renovacao != date.today():
                 return False, "Só é possível desfazer renovações do mesmo dia"
             
-            # Restaurar saldos do backup
-            import json
-            try:
-                backup_dados = json.loads(renovacao['backup_dados']) if isinstance(renovacao['backup_dados'], str) else renovacao['backup_dados']
-            except:
-                # Se falhar, tentar eval (fallback)
-                backup_dados = eval(renovacao['backup_dados']) if isinstance(renovacao['backup_dados'], str) else renovacao['backup_dados']
+            # Subtrair o valor que foi adicionado
+            success1 = self._execute_query(
+                "UPDATE usuarios SET saldo_ferias = saldo_ferias - %s WHERE ativo = true AND saldo_ferias >= %s",
+                (saldo_adicionado, saldo_adicionado)
+            )
             
-            with psycopg2.connect(self.conn_str) as conn:
-                with conn.cursor() as cur:
-                    # Restaurar cada saldo
-                    for usuario_backup in backup_dados:
-                        cur.execute(
-                            "UPDATE usuarios SET saldo_ferias = %s WHERE id = %s",
-                            (usuario_backup['saldo_ferias'], usuario_backup['id'])
-                        )
-                    
-                    # Remover registro de renovação
-                    cur.execute("DELETE FROM renovacao_saldo WHERE id = %s", (renovacao['id'],))
-                    
-                    conn.commit()
-                    
-                    return True, "Renovação desfeita com sucesso!"
+            if not success1:
+                return False, "Erro ao atualizar saldos"
+            
+            # Remover registro de renovação
+            success2 = self._execute_query(
+                "DELETE FROM renovacao_saldo WHERE id = %s",
+                (renovacao['id'],)
+            )
+            
+            if not success2:
+                return False, "Erro ao remover registro"
+            
+            return True, f"Renovação desfeita! Valor de {saldo_adicionado} dias foi removido dos saldos."
+            
         except Exception as e:
             return False, f"Erro ao desfazer renovação: {str(e)}"
     
