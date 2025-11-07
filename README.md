@@ -216,3 +216,5 @@ Funcionalidade completa de renovação anual foi desenvolvida e está disponíve
 ---
 
 **Última atualização:** Novembro 2025 - Sistema completo com PostgreSQL, avisos, renovação de saldo e interface "Gestão de Pessoas" 
+
+
