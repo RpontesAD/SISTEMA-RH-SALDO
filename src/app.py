@@ -32,13 +32,13 @@ def main():
     
     # Forçar recriação da conexão do banco se necessário
     if "users_db" not in st.session_state or not hasattr(st.session_state.users_db, 'get_users'):
-        from .database.simple_psycopg2 import SimplePsycopg2
-        st.session_state.users_db = SimplePsycopg2()
+        from .database import DatabaseManager
+        st.session_state.users_db = DatabaseManager()
     
     # Verificar se a conexão existe
     if "users_db" not in st.session_state:
-        from .database.simple_psycopg2 import SimplePsycopg2
-        st.session_state.users_db = SimplePsycopg2()
+        from .database import DatabaseManager
+        st.session_state.users_db = DatabaseManager()
 
     logo_path = "assets/LOGORPONTES-1.png"
 
