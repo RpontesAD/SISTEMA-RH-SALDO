@@ -28,14 +28,31 @@ SETORES = [
 # Funções
 FUNCOES = [
     "Analista",
+    "Analista Administrativo",
+    "Analista de Dados",
+    "Analista de Suprimentos",
+    "Analista Financeiro",
+    "Analista Técnico",
+    "Arquiteta",
     "Assistente",
+    "Assistente de Marketing",
+    "Assistente Técnico de Informática",
     "Auxiliar",
+    "Consultor",
     "Coordenador",
+    "Coordenador Comercial",
+    "Coordenador de Projetos",
+    "Coordenador Financeiro",
+    "Coordenadora",
     "Diretor",
+    "Diretor Engenharia",
+    "Engenheiro Civil",
     "Estagiário",
     "Gerente",
+    "Gerente Contábil Financeiro",
+    "Gerente de Marketing",
+    "Motorista",
     "Supervisor",
-    "Consultor",
 ]
 
 # Status de Férias
