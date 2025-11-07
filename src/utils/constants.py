@@ -14,7 +14,7 @@ DIAS_ANTECEDENCIA_MINIMA = 7
 SETORES = [
     "ADMINISTRAÇÃO",
     "ASSISTÊNCIA TÉCNICA",
-    "GESTÃO DE PESSOAS (RH)",
+    "GESTÃO DE PESSOAS",
     "FINANCEIRO",
     "SUPRIMENTO",
     "ENGENHARIA",
@@ -22,7 +22,6 @@ SETORES = [
     "TI",
     "ANÁLISE DE DADOS",
     "COMERCIAL",
-    "RH",
     "DIRETORIA",
 ]
 
@@ -33,8 +32,8 @@ FUNCOES = [
     "Auxiliar",
     "Coordenador",
     "Diretor",
+    "Estagiário",
     "Gerente",
-    "RH",
     "Supervisor",
     "Consultor",
 ]

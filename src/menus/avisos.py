@@ -78,9 +78,18 @@ def menu_avisos():
         
         if not matriz_dados:
             st.info("Nenhum aviso publicado ainda.")
+            return
+        
+        if len(matriz_dados) == 0:
+            st.info("Nenhum aviso ativo encontrado.")
+            return
         else:
             # Converter para DataFrame
             df_matriz = pd.DataFrame(matriz_dados)
+            
+            # Adicionar coluna oculto se não existir (para compatibilidade)
+            if 'oculto' not in df_matriz.columns:
+                df_matriz['oculto'] = False
             
             # Criar tabela pivot: colaboradores x avisos
             pivot_table = df_matriz.pivot_table(
@@ -101,18 +110,62 @@ def menu_avisos():
                         lambda x: '✅' if x else '❌'
                     )
             
-            # Seletor de avisos
-            avisos_disponiveis = df_matriz['titulo'].unique().tolist()
-            aviso_selecionado = st.selectbox(
-                "Selecionar aviso para visualizar:",
-                avisos_disponiveis
-            )
+            # Verificar se há colunas necessárias
+            if 'titulo' not in df_matriz.columns or 'aviso_id' not in df_matriz.columns:
+                st.error("Dados de avisos incompletos")
+                return
+            
+            # Seletor de avisos com ações
+            avisos_disponiveis = df_matriz[['titulo', 'aviso_id']].drop_duplicates()
+            
+            if avisos_disponiveis.empty:
+                st.info("Nenhum aviso encontrado")
+                return
+            
+            avisos_dict = {str(row['titulo']): int(row['aviso_id']) for _, row in avisos_disponiveis.iterrows()}
+            
+
+            
+            col_sel, col_edit, col_del = st.columns([3, 1, 1])
+            
+            with col_sel:
+                aviso_selecionado = st.selectbox(
+                    "Selecionar aviso para visualizar:",
+                    list(avisos_dict.keys())
+                )
+            
+            # Obter ID do aviso selecionado
+            aviso_id = avisos_dict.get(aviso_selecionado)
+            
+            if not aviso_id:
+                st.error("ID do aviso não encontrado")
+                return
+            
+            with col_edit:
+                if st.button("Editar", key=f"edit_{aviso_id}", use_container_width=True):
+                    st.session_state.editando_aviso = aviso_id
+                    st.rerun()
+            
+            with col_del:
+                if st.button("Excluir", key=f"del_{aviso_id}", use_container_width=True, type="secondary"):
+                    if st.session_state.users_db.excluir_aviso(aviso_id):
+                        st.success("Aviso excluído!")
+                        st.rerun()
+                    else:
+                        st.error("Erro ao excluir aviso")
+            
+            # Mostrar formulário de edição se necessário
+            if st.session_state.get('editando_aviso'):
+                _mostrar_formulario_edicao(st.session_state.editando_aviso)
+                return
             
             # Filtrar dados pelo aviso selecionado
             df_filtrado = df_matriz[df_matriz['titulo'] == aviso_selecionado]
             
             # Criar tabela apenas com o aviso selecionado
             tabela_aviso = df_filtrado[['nome', 'setor', 'funcao', 'lido']].copy()
+            
+            # Criar status simples
             tabela_aviso['status'] = tabela_aviso['lido'].apply(
                 lambda x: '✅ Lido' if x else '❌ Não lido'
             )
@@ -130,7 +183,8 @@ def menu_avisos():
             )
                 
     except Exception as e:
-        st.error(f"Erro ao carregar matriz de leitura: {str(e)}")
+        st.error(f"Erro ao carregar matriz de leitura: {type(e).__name__}: {str(e)}")
+
 
 def _get_usuarios_opcoes():
     """Retorna lista de usuários para seleção"""
@@ -190,7 +244,7 @@ def _mostrar_detalhes_aviso(aviso_id):
             lambda x: x.strftime('%d/%m/%Y %H:%M') if x else '-'
         )
         
-        # Adicionar status visual
+        # Adicionar status visual simples
         df_status['status_visual'] = df_status['lido'].apply(
             lambda x: '✅ Lido' if x else '❌ Não lido'
         )
@@ -224,3 +278,37 @@ def _mostrar_detalhes_aviso(aviso_id):
             
     except Exception as e:
         st.error("Erro ao carregar detalhes do aviso")
+
+def _mostrar_formulario_edicao(aviso_id):
+    """Mostra formulário de edição de aviso"""
+    st.markdown("##### Editar Aviso")
+    
+    # Buscar dados do aviso
+    aviso_dados = st.session_state.users_db.get_aviso_detalhes(aviso_id)
+    
+    if not aviso_dados:
+        st.error("Aviso não encontrado ou foi excluído")
+        if st.button("Voltar"):
+            del st.session_state.editando_aviso
+            st.rerun()
+        return
+    
+    with st.form("form_edicao_aviso"):
+        titulo = st.text_input("Título", value=aviso_dados['titulo'])
+        conteudo = st.text_area("Conteúdo", value=aviso_dados['conteudo'], height=150)
+        
+        col_save, col_cancel = st.columns(2)
+        
+        with col_save:
+            if st.form_submit_button("Salvar Alterações", type="primary", use_container_width=True):
+                if st.session_state.users_db.atualizar_aviso(aviso_id, titulo, conteudo):
+                    st.success("Aviso atualizado!")
+                    del st.session_state.editando_aviso
+                    st.rerun()
+                else:
+                    st.error("Erro ao atualizar aviso")
+        
+        with col_cancel:
+            if st.form_submit_button("Cancelar", use_container_width=True):
+                del st.session_state.editando_aviso
+                st.rerun()

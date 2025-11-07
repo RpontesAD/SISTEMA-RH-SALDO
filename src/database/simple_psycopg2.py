@@ -114,13 +114,26 @@ class SimplePsycopg2:
                 aviso_id INTEGER REFERENCES avisos(id) ON DELETE CASCADE,
                 usuario_id INTEGER REFERENCES usuarios(id),
                 lido BOOLEAN DEFAULT false,
-                data_leitura TIMESTAMP
+                data_leitura TIMESTAMP,
+                oculto BOOLEAN DEFAULT false
             )
+        """)
+        
+        # Adicionar coluna oculto se não existir (forçar atualização)
+        self._execute_query("""
+            ALTER TABLE avisos_destinatarios ADD COLUMN IF NOT EXISTS oculto BOOLEAN DEFAULT false
+        """)
+        
+        # Garantir que registros existentes tenham oculto = false
+        self._execute_query("""
+            UPDATE avisos_destinatarios SET oculto = false WHERE oculto IS NULL
         """)
         
         # Habilitar RLS nas novas tabelas
         self._execute_query("ALTER TABLE renovacao_saldo ENABLE ROW LEVEL SECURITY")
         self._execute_query("ALTER TABLE saldos_anuais ENABLE ROW LEVEL SECURITY")
+        self._execute_query("ALTER TABLE avisos ENABLE ROW LEVEL SECURITY")
+        self._execute_query("ALTER TABLE avisos_destinatarios ENABLE ROW LEVEL SECURITY")
         
         # Criar políticas RLS para renovacao_saldo
         self._execute_query("""
@@ -131,6 +144,18 @@ class SimplePsycopg2:
         # Criar políticas RLS para saldos_anuais
         self._execute_query("""
             CREATE POLICY IF NOT EXISTS "Permitir acesso total" ON saldos_anuais
+            FOR ALL USING (true)
+        """)
+        
+        # Criar políticas RLS para avisos
+        self._execute_query("""
+            CREATE POLICY IF NOT EXISTS "Permitir acesso total" ON avisos
+            FOR ALL USING (true)
+        """)
+        
+        # Criar políticas RLS para avisos_destinatarios
+        self._execute_query("""
+            CREATE POLICY IF NOT EXISTS "Permitir acesso total" ON avisos_destinatarios
             FOR ALL USING (true)
         """)
         
@@ -147,7 +172,7 @@ class SimplePsycopg2:
                 self._execute_query("""
                     INSERT INTO usuarios (nome, email, senha_hash, setor, funcao, nivel_acesso, saldo_ferias, data_admissao) 
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, ('Administrador', 'admin@rpontes.com', senha_hash, 'RH', 'RH', 'master', 12, date.today()))
+                """, ('Administrador', 'admin@rpontes.com', senha_hash, 'GESTÃO DE PESSOAS', 'Gerente', 'master', 12, date.today()))
         except:
             pass
     
@@ -572,14 +597,19 @@ class SimplePsycopg2:
             return False
     
     def get_avisos_usuario(self, usuario_id):
-        """Obtém avisos para um usuário específico"""
+        """Obtém avisos para um usuário específico (apenas não ocultos)"""
+        # Garantir que a coluna oculto existe
+        self._execute_query("""
+            ALTER TABLE avisos_destinatarios ADD COLUMN IF NOT EXISTS oculto BOOLEAN DEFAULT false
+        """)
+        
         return self._execute_query("""
             SELECT a.id, a.titulo, a.conteudo, a.data_criacao, 
                    u.nome as autor_nome, ad.lido, ad.data_leitura
             FROM avisos a
             JOIN avisos_destinatarios ad ON a.id = ad.aviso_id
             JOIN usuarios u ON a.autor_id = u.id
-            WHERE ad.usuario_id = %s AND a.ativo = true
+            WHERE ad.usuario_id = %s AND a.ativo = true AND COALESCE(ad.oculto, false) = false
             ORDER BY a.data_criacao DESC
         """, (usuario_id,), fetch=True)
     
@@ -592,7 +622,7 @@ class SimplePsycopg2:
         """, (aviso_id, usuario_id))
     
     def get_avisos_admin(self):
-        """Obtém todos os avisos para administração"""
+        """Obtém todos os avisos para administração (incluindo ocultos pelos usuários)"""
         return self._execute_query("""
             SELECT a.id, a.titulo, a.data_criacao, u.nome as autor_nome,
                    COUNT(ad.id) as total_destinatarios,
@@ -606,9 +636,14 @@ class SimplePsycopg2:
         """, fetch=True)
     
     def get_status_leitura_aviso(self, aviso_id):
-        """Obtém status de leitura de um aviso específico"""
+        """Obtém status de leitura de um aviso específico (incluindo ocultos)"""
+        # Primeiro garantir que a coluna oculto existe
+        self._execute_query("""
+            ALTER TABLE avisos_destinatarios ADD COLUMN IF NOT EXISTS oculto BOOLEAN DEFAULT false
+        """)
+        
         return self._execute_query("""
-            SELECT u.nome, u.setor, u.funcao, ad.lido, ad.data_leitura
+            SELECT u.nome, u.setor, u.funcao, ad.lido, ad.data_leitura, COALESCE(ad.oculto, false) as oculto
             FROM avisos_destinatarios ad
             JOIN usuarios u ON ad.usuario_id = u.id
             WHERE ad.aviso_id = %s
@@ -616,7 +651,12 @@ class SimplePsycopg2:
         """, (aviso_id,), fetch=True)
     
     def get_matriz_leitura_avisos(self):
-        """Obtém matriz de leitura: colaboradores x avisos"""
+        """Obtém matriz de leitura: todos os avisos ativos (incluindo ocultos pelos usuários)"""
+        # Primeiro garantir que a coluna oculto existe
+        self._execute_query("""
+            ALTER TABLE avisos_destinatarios ADD COLUMN IF NOT EXISTS oculto BOOLEAN DEFAULT false
+        """)
+        
         return self._execute_query("""
             SELECT 
                 u.nome,
@@ -625,13 +665,47 @@ class SimplePsycopg2:
                 a.id as aviso_id,
                 a.titulo,
                 COALESCE(ad.lido, false) as lido,
-                ad.data_leitura
-            FROM usuarios u
-            CROSS JOIN avisos a
-            LEFT JOIN avisos_destinatarios ad ON u.id = ad.usuario_id AND a.id = ad.aviso_id
+                ad.data_leitura,
+                COALESCE(ad.oculto, false) as oculto
+            FROM avisos a
+            JOIN avisos_destinatarios ad ON a.id = ad.aviso_id
+            JOIN usuarios u ON ad.usuario_id = u.id
             WHERE a.ativo = true AND u.ativo = true
-            ORDER BY u.nome, a.data_criacao DESC
+            ORDER BY a.data_criacao DESC, u.nome
         """, fetch=True)
     
+    def get_aviso_detalhes(self, aviso_id):
+        """Obtém detalhes de um aviso ativo"""
+        result = self._execute_query("""
+            SELECT titulo, conteudo FROM avisos WHERE id = %s AND ativo = true
+        """, (aviso_id,), fetch=True)
+        return result[0] if result else None
+    
+    def atualizar_aviso(self, aviso_id, titulo, conteudo):
+        """Atualiza um aviso"""
+        return self._execute_query("""
+            UPDATE avisos SET titulo = %s, conteudo = %s WHERE id = %s
+        """, (titulo, conteudo, aviso_id))
+    
+    def excluir_aviso(self, aviso_id):
+        """Exclui um aviso (marca como inativo)"""
+        return self._execute_query("""
+            UPDATE avisos SET ativo = false WHERE id = %s
+        """, (aviso_id,))
+    
+    def remover_aviso_usuario(self, aviso_id, usuario_id):
+        """Oculta aviso da visualização do usuário (preserva dados para controle)"""
+        # Garantir que a coluna oculto existe
+        self._execute_query("""
+            ALTER TABLE avisos_destinatarios ADD COLUMN IF NOT EXISTS oculto BOOLEAN DEFAULT false
+        """)
+        
+        # Atualizar para oculto
+        return self._execute_query("""
+            UPDATE avisos_destinatarios SET oculto = true 
+            WHERE aviso_id = %s AND usuario_id = %s
+        """, (aviso_id, usuario_id))
+    
+
     def close(self):
         pass

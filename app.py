@@ -56,6 +56,9 @@ except:
 # Forçar recriação se houver problema com métodos
 if "users_db" in st.session_state:
     try:
+        # Testar se métodos de avisos existem
+        if not hasattr(st.session_state.users_db, 'remover_aviso_usuario'):
+            raise AttributeError("Método remover_aviso_usuario não encontrado")
         # Testar conexão básica
         st.session_state.users_db.get_users(incluir_inativos=False)
     except (TypeError, AttributeError):

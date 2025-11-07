@@ -112,26 +112,35 @@ def _menu_minha_area_diretoria():
                     
                     with col_aviso:
                         if not aviso['lido']:
-                            st.markdown(f"**🔴 {aviso['titulo']}**")
+                            st.markdown(f"**Título: {aviso['titulo']}** 🔴")
                         else:
-                            st.markdown(f"**{aviso['titulo']}**")
+                            st.markdown(f"**Título: {aviso['titulo']}**")
                         
                         st.write(aviso['conteudo'])
                         
-                        data_criacao = aviso['data_criacao'].strftime("%d/%m/%Y às %H:%M")
-                        st.caption(f"Por: {aviso['autor_nome']} • {data_criacao}")
+                        data_criacao = aviso['data_criacao'].strftime("%d/%m/%Y")
+                        st.caption(f"Por: {aviso['autor_nome']} em {data_criacao}")
                     
                     with col_status:
-                        if not aviso['lido']:
-                            if st.button("Marcar como Lido", key=f"lido_{aviso['id']}", type="secondary"):
-                                sucesso = st.session_state.users_db.marcar_aviso_lido(aviso['id'], user['id'])
+                        col_btn1, col_btn2 = st.columns(2)
+                        
+                        with col_btn1:
+                            if not aviso['lido']:
+                                if st.button("Marcar como Lido", key=f"lido_{aviso['id']}", type="secondary"):
+                                    sucesso = st.session_state.users_db.marcar_aviso_lido(aviso['id'], user['id'])
+                                    if sucesso:
+                                        st.rerun()
+                            else:
+                                st.success("Lido")
+                                if aviso['data_leitura']:
+                                    data_leitura = aviso['data_leitura'].strftime("%d/%m/%Y")
+                                    st.caption(f"em {data_leitura}")
+                        
+                        with col_btn2:
+                            if st.button("✕", key=f"remover_{aviso['id']}", help="Remover aviso", type="secondary"):
+                                sucesso = st.session_state.users_db.remover_aviso_usuario(aviso['id'], user['id'])
                                 if sucesso:
                                     st.rerun()
-                        else:
-                            st.success("Lido")
-                            if aviso['data_leitura']:
-                                data_leitura = aviso['data_leitura'].strftime("%d/%m/%Y")
-                                st.caption(f"em {data_leitura}")
                     
                     st.markdown("---")
     
