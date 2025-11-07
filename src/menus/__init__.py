@@ -13,7 +13,7 @@ from .menu_coordenador import menu_coordenador
 
 def menu_rh():
     """Menu principal para RH (Master)"""
-    st.markdown("### Painel GP - Acesso Master")
+    st.markdown("### Painel Gestão de Pessoas - Acesso Master")
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "Cadastrar Colaborador",

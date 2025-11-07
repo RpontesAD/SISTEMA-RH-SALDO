@@ -110,15 +110,18 @@ def _menu_minha_area_coordenador():
                     col_aviso, col_status = st.columns([4, 1])
                     
                     with col_aviso:
+                        # Título simples
                         if not aviso['lido']:
-                            st.markdown(f"**Título: {aviso['titulo']}** 🔴")
+                            st.markdown(f"**{aviso['titulo']}** (novo)")
                         else:
-                            st.markdown(f"**Título: {aviso['titulo']}**")
+                            st.markdown(f"**{aviso['titulo']}**")
                         
+                        # Conteúdo
                         st.write(aviso['conteudo'])
                         
+                        # Informações de publicação
                         data_criacao = aviso['data_criacao'].strftime("%d/%m/%Y")
-                        st.caption(f"Por: {aviso['autor_nome']} em {data_criacao}")
+                        st.caption(f"Por {aviso['autor_nome']} em {data_criacao}")
                     
                     with col_status:
                         col_btn1, col_btn2 = st.columns(2)
@@ -136,7 +139,7 @@ def _menu_minha_area_coordenador():
                                     st.caption(f"em {data_leitura}")
                         
                         with col_btn2:
-                            if st.button("✕", key=f"remover_{aviso['id']}", help="Remover aviso", type="secondary"):
+                            if st.button("Ocultar", key=f"remover_{aviso['id']}", help="Ocultar aviso", type="secondary"):
                                 sucesso = st.session_state.users_db.remover_aviso_usuario(aviso['id'], user['id'])
                                 if sucesso:
                                     st.rerun()

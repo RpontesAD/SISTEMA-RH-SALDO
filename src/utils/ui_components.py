@@ -31,7 +31,7 @@ def create_header(empresa: str, sistema: str, logo_path: str = None):
                 <div style="text-align: center; margin-bottom: 30px;">
                     <img src="data:image/png;base64,{logo_base64}" width="150" style="margin-bottom: 10px;">
                     <h1>{empresa}</h1>
-                    <h3 style="color: #666;">{sistema}</h3>
+                    <h3 style="color: #666;">Sistema de Gestão de Férias - Gestão de Pessoas</h3>
                 </div>
                 ''',
                 unsafe_allow_html=True
@@ -39,7 +39,7 @@ def create_header(empresa: str, sistema: str, logo_path: str = None):
         else:
             # Header sem logo
             st.markdown(
-                f'<div style="text-align: center; margin-bottom: 30px;"><h1>{empresa}</h1><h3 style="color: #666;">{sistema}</h3></div>',
+                f'<div style="text-align: center; margin-bottom: 30px;"><h1>{empresa}</h1><h3 style="color: #666;">Sistema de Gestão de Férias - Gestão de Pessoas</h3></div>',
                 unsafe_allow_html=True
             )
         
@@ -48,9 +48,9 @@ def create_header(empresa: str, sistema: str, logo_path: str = None):
         safe_html = safe_format_html("""
         <div style="text-align: center; margin-bottom: 30px;">
             <h1>{empresa}</h1>
-            <h3 style="color: #666;">{sistema}</h3>
+            <h3 style="color: #666;">Sistema de Gestão de Férias - Gestão de Pessoas</h3>
         </div>
-        """, empresa=empresa, sistema=sistema)
+        """, empresa=empresa)
         st.markdown(safe_html, unsafe_allow_html=True)
 
 
