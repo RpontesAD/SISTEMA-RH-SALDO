@@ -59,6 +59,8 @@ if "users_db" in st.session_state:
         # Testar se métodos de avisos existem
         if not hasattr(st.session_state.users_db, 'remover_aviso_usuario'):
             raise AttributeError("Método remover_aviso_usuario não encontrado")
+        if not hasattr(st.session_state.users_db, 'get_matriz_leitura_avisos'):
+            raise AttributeError("Método get_matriz_leitura_avisos não encontrado")
         # Testar conexão básica
         st.session_state.users_db.get_users(incluir_inativos=False)
     except (TypeError, AttributeError):
@@ -83,8 +85,8 @@ if "db_conn" not in st.session_state:
         
         if config["type"] == "sheets":
             # Usar database simples (PostgreSQL)
-            from src.database.simple_psycopg2 import SimplePsycopg2
-            st.session_state.db = SimplePsycopg2()
+            from src.database import DatabaseManager
+            st.session_state.db = DatabaseManager()
             
         elif config["type"] == "mysql":
             # Usar MySQL
