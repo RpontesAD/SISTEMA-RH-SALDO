@@ -25,6 +25,7 @@ class SQLSecurity:
         r'--.*$'
     ]
     
+    
     @staticmethod
     def validate_input(value: Any) -> bool:
         """

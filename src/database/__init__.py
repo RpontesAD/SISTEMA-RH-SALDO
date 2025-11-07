@@ -1,5 +1,8 @@
-from .simple_psycopg2 import SimplePsycopg2
+from .database_manager import DatabaseManager
 
-# Alias para compatibilidade
-Database = SimplePsycopg2
-SimplePsycopg2Database = SimplePsycopg2
+# Usar nova estrutura modular como padrão
+Database = DatabaseManager
+
+# Manter compatibilidade
+SimplePsycopg2Database = DatabaseManager
+SimplePsycopg2 = DatabaseManager
