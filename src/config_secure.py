@@ -19,6 +19,8 @@ SETORES = [
     "ANÁLISE DE DADOS",
     "COMERCIAL",
     "RH",
+    "PROJETOS",
+    "ADMINISTRATIVO"
 ]
 
 FUNCOES = [
@@ -31,6 +33,7 @@ FUNCOES = [
     "RH",
     "Supervisor",
     "Técnico",
+    "Recepcionista",
 ]
 
 NIVEIS_ACESSO = {
