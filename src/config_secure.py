@@ -18,7 +18,6 @@ SETORES = [
     "TI",
     "ANÁLISE DE DADOS",
     "COMERCIAL",
-    "RH",
     "PROJETOS",
     "ADMINISTRATIVO"
 ]

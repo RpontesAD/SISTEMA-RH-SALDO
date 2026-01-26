@@ -23,6 +23,7 @@ SETORES = [
     "ANÁLISE DE DADOS",
     "COMERCIAL",
     "DIRETORIA",
+    "PROJETOS"
 ]
 
 # Funções
@@ -53,6 +54,7 @@ FUNCOES = [
     "Gerente de Marketing",
     "Motorista",
     "Supervisor",
+    "Recepcionista",
 ]
 
 # Status de Férias
