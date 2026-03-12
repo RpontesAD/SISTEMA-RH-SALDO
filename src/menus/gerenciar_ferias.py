@@ -128,7 +128,7 @@ def _interface_cadastrar_ferias(service: FeriasService, user_id: int, user_data)
         col1, col2 = st.columns(2)
         
         with col1:
-            data_inicio = st.date_input("Data de Início", min_value=date.today(), format="DD/MM/YYYY")
+            data_inicio = st.date_input("Data de Início", format="DD/MM/YYYY")
             
         with col2:
             data_fim = st.date_input("Data de Fim", min_value=date.today(), format="DD/MM/YYYY")
