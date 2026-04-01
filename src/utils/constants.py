@@ -23,7 +23,9 @@ SETORES = [
     "ANÁLISE DE DADOS",
     "COMERCIAL",
     "DIRETORIA",
-    "PROJETOS"
+    "PROJETOS",
+    "ADMINISTRATIVO DE OBRA",
+    "APOIO"
 ]
 
 # Funções
@@ -55,6 +57,8 @@ FUNCOES = [
     "Motorista",
     "Supervisor",
     "Recepcionista",
+    "Servente",
+    "Motorista"
 ]
 
 # Status de Férias
