@@ -223,7 +223,7 @@ class ColaboradoresService:
             }
     
     def atualizar_colaborador(self, user_id: int, nome: str, email: str, setor: str,
-                             funcao: str, nivel_acesso: str, saldo_ferias: int) -> Dict[str, Any]:
+                             funcao: str, nivel_acesso: str, saldo_ferias: int, admissao: date) -> Dict[str, Any]:
         """
         Atualiza dados do colaborador.
         
@@ -235,6 +235,7 @@ class ColaboradoresService:
             funcao: Função do colaborador
             nivel_acesso: Nível de acesso
             saldo_ferias: Saldo de férias
+            admissao: ADMISSÃO
             
         Returns:
             Dict com resultado da operação
@@ -275,6 +276,7 @@ class ColaboradoresService:
                 funcao=funcao,
                 nivel_acesso=nivel_acesso,
                 saldo_ferias=validacao_saldo["saldo_corrigido"]
+                admissao=admissao
             )
             
             if resultado:
