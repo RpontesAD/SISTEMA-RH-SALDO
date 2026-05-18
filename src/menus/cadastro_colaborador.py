@@ -263,7 +263,7 @@ def _interface_edicao_colaborador(service: ColaboradoresService, user_id: int, u
 
 
 def _processar_edicao(service: ColaboradoresService, user_id: int, nome: str, email: str,
-                     setor: str, funcao: str, nivel_acesso: str, saldo_ferias: int, admissao: str):
+                     setor: str, funcao: str, nivel_acesso: str, saldo_ferias: int, admissao: date):
     """
     Processa edição usando o serviço.
     """
