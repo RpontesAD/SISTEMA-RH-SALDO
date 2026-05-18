@@ -240,10 +240,7 @@ def _interface_edicao_colaborador(service: ColaboradoresService, user_id: int, u
             nome = safe_text_input("Nome Completo*", value=user_data['nome'], max_chars=100)
             email = safe_text_input("Email*", value=user_data['email'], max_chars=100)
             setor = safe_selectbox("Setor*", SETORES, index=SETORES.index(user_data['setor']) if user_data['setor'] in SETORES else 0)
-            admissao = st.date_input(
-            "Data de Admissão",
-            value=user_data['admissao']
-            )
+            admissao = st.date_input("ADMISSÃO", value=user_data['admissao'])
         with col2:
             funcao = safe_selectbox("Função*", FUNCOES, index=FUNCOES.index(user_data['funcao']) if user_data['funcao'] in FUNCOES else 0)
             nivel_acesso = safe_selectbox("Nível de Acesso", 
