@@ -239,7 +239,7 @@ def _formulario_edicao(user_data):
             email = st.text_input("Email", value=user_data['email'])
 
             admissao = st.date_input(
-                "Admissão",
+                "ADMISSÃO",
                 value=admissao_atual,
                 format="DD/MM/YYYY"
             )
