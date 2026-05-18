@@ -173,7 +173,7 @@ def menu_listar_colaboradores():
     colaboradores_df = colaboradores_result["colaboradores"]
     
     st.dataframe(
-        colaboradores_df[['nome', 'email', 'setor', 'funcao', 'nivel_acesso', 'saldo_ferias']],
+        colaboradores_df[['nome', 'email', 'setor', 'funcao', 'nivel_acesso', 'saldo_ferias', 'admissao']],
         column_config={
             'nome': 'Nome',
             'email': 'Email',
@@ -181,6 +181,7 @@ def menu_listar_colaboradores():
             'funcao': 'Função',
             'nivel_acesso': 'Nível',
             'saldo_ferias': 'Saldo (dias)'
+            'admissao': "ADMISSÃO"
         },
         use_container_width=True,
         hide_index=True
