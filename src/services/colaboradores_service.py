@@ -276,7 +276,6 @@ class ColaboradoresService:
                 funcao=funcao,
                 nivel_acesso=nivel_acesso,
                 saldo_ferias=validacao_saldo["saldo_corrigido"]
-                admissao=admissao
             )
             
             if resultado:
