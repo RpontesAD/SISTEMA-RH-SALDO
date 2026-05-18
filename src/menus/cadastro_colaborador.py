@@ -180,8 +180,8 @@ def menu_listar_colaboradores():
             'setor': 'Setor',
             'funcao': 'Função',
             'nivel_acesso': 'Nível',
-            'saldo_ferias': 'Saldo (dias)'
-            'admissao': "ADMISSÃO"
+            'saldo_ferias': 'Saldo (dias)',
+            'admissao': "admissao"
         },
         use_container_width=True,
         hide_index=True
