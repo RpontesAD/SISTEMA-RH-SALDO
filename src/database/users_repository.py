@@ -68,12 +68,12 @@ class UsersRepository(BaseConnection):
                 return False
             return False
     
-    def update_user(self, user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias):
+    def update_user(self, user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias, admissao):
         """Atualiza usuário"""
         return self._execute_query("""
             UPDATE usuarios SET nome=%s, email=%s, setor=%s, funcao=%s, 
-            nivel_acesso=%s, saldo_ferias=%s WHERE id=%s
-        """, (nome, email, setor, funcao, nivel_acesso, saldo_ferias, user_id))
+            nivel_acesso=%s, saldo_ferias=%s, admissao=%s WHERE id=%s
+        """, (nome, email, setor, funcao, nivel_acesso, saldo_ferias, user_id, admissao ))
     
     def inativar_usuario(self, user_id):
         """Inativa usuário"""

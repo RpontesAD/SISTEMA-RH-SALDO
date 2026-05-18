@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 from ..config import SETORES, FUNCOES
 
 def menu_gerenciar_colaboradores():
@@ -216,84 +217,183 @@ def _formulario_edicao(user_data):
     
     with st.form("form_edicao"):
         col1, col2 = st.columns(2)
-        
+
+        # =========================
+        # TRATAMENTO DA DATA
+        # =========================
+        admissao_atual = user_data.get("admissao")
+
+        try:
+            if isinstance(admissao_atual, str):
+                admissao_atual = datetime.strptime(admissao_atual, "%Y-%m-%d").date()
+            elif pd.notnull(admissao_atual):
+                admissao_atual = pd.to_datetime(admissao_atual).date()
+            else:
+                admissao_atual = datetime.today().date()
+        except:
+            admissao_atual = datetime.today().date()
+
         with col1:
             nome = st.text_input("Nome", value=user_data['nome'])
+
             email = st.text_input("Email", value=user_data['email'])
-            
+
+            admissao = st.date_input(
+                "Admissão",
+                value=admissao_atual,
+                format="DD/MM/YYYY"
+            )
+
             try:
                 setor_index = SETORES.index(user_data['setor'])
             except ValueError:
                 setor_index = 0
-            setor = st.selectbox("Setor", SETORES, index=setor_index)
-        
+
+            setor = st.selectbox(
+                "Setor",
+                SETORES,
+                index=setor_index
+            )
+
         with col2:
             try:
                 funcao_index = FUNCOES.index(user_data['funcao'])
             except ValueError:
                 funcao_index = 0
-            funcao = st.selectbox("Função", FUNCOES, index=funcao_index)
-            
+
+            funcao = st.selectbox(
+                "Função",
+                FUNCOES,
+                index=funcao_index
+            )
+
             niveis = ["colaborador", "coordenador", "diretoria", "master"]
+
             try:
                 nivel_index = niveis.index(user_data['nivel_acesso'])
             except ValueError:
                 nivel_index = 0
-            nivel_acesso = st.selectbox("Nível de Acesso", niveis, index=nivel_index)
-            
-            saldo_ferias = st.number_input("Saldo de Férias", min_value=0, value=int(user_data['saldo_ferias']))
-            
-            nova_senha = st.text_input("🔒 Nova Senha (deixe vazio para manter)", type="password")
-            confirmar_senha = st.text_input("🔒 Confirmar Nova Senha", type="password")
-        
+
+            nivel_acesso = st.selectbox(
+                "Nível de Acesso",
+                niveis,
+                index=nivel_index
+            )
+
+            saldo_ferias = st.number_input(
+                "Saldo de Férias",
+                min_value=0,
+                value=int(user_data['saldo_ferias'])
+            )
+
+            nova_senha = st.text_input(
+                "🔒 Nova Senha (deixe vazio para manter)",
+                type="password"
+            )
+
+            confirmar_senha = st.text_input(
+                "🔒 Confirmar Nova Senha",
+                type="password"
+            )
+
         col_save, col_cancel = st.columns(2)
-        
+
         with col_save:
-            if st.form_submit_button("Salvar Alterações", type="primary", use_container_width=True):
-                # Validar senhas se fornecidas
+            if st.form_submit_button(
+                "Salvar Alterações",
+                type="primary",
+                use_container_width=True
+            ):
+
+                # =========================
+                # VALIDAR SENHAS
+                # =========================
                 if nova_senha or confirmar_senha:
                     if nova_senha != confirmar_senha:
                         st.error("❌ Senhas não coincidem")
                         return
+
                     if len(nova_senha) < 6:
                         st.error("❌ Senha deve ter pelo menos 6 caracteres")
                         return
-                
+
                 try:
                     from ..services.colaboradores_service import ColaboradoresService
-                    service = ColaboradoresService(st.session_state.users_db)
-                    
-                    # Converter tipos numpy para tipos Python nativos
+
+                    service = ColaboradoresService(
+                        st.session_state.users_db
+                    )
+
+                    # =========================
+                    # CONVERSÕES
+                    # =========================
                     user_id = int(user_data['id'])
+
                     saldo_ferias_int = int(saldo_ferias)
-                    
-                    resultado = service.atualizar_colaborador(user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias_int)
-                    
+
+                    admissao_formatada = admissao.strftime("%Y-%m-%d")
+
+                    # =========================
+                    # ATUALIZAR COLABORADOR
+                    # =========================
+                    resultado = service.atualizar_colaborador(
+                        user_id,
+                        nome,
+                        email,
+                        setor,
+                        funcao,
+                        nivel_acesso,
+                        saldo_ferias_int,
+                        admissao_formatada
+                    )
+
                     if resultado["sucesso"]:
-                        # Atualizar senha se fornecida
+
+                        # =========================
+                        # ATUALIZAR SENHA
+                        # =========================
                         if nova_senha:
                             import bcrypt
-                            senha_hash = bcrypt.hashpw(nova_senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+                            senha_hash = bcrypt.hashpw(
+                                nova_senha.encode('utf-8'),
+                                bcrypt.gensalt()
+                            ).decode('utf-8')
+
                             resultado_senha = st.session_state.users_db._execute_query(
-                                "UPDATE usuarios SET senha_hash=%s WHERE id=%s", 
+                                "UPDATE usuarios SET senha_hash=%s WHERE id=%s",
                                 (senha_hash, user_id)
                             )
+
                             if not resultado_senha:
                                 st.error("❌ Erro ao atualizar senha")
                                 return
-                        
+
                         st.success(f"✅ {resultado['mensagem']}")
+
                         _limpar_sessao()
+
                         st.rerun()
+
                     else:
                         st.error(f"❌ {resultado['erro']}")
+
                         if "saldo_corrigido" in resultado:
-                            st.info(f"💡 Saldo sugerido: {resultado['saldo_corrigido']} dias")
+                            st.info(
+                                f"💡 Saldo sugerido: "
+                                f"{resultado['saldo_corrigido']} dias"
+                            )
+
                 except Exception as e:
-                    st.error(f"❌ Erro ao atualizar colaborador: {str(e)}")
-        
+                    st.error(
+                        f"❌ Erro ao atualizar colaborador: {str(e)}"
+                    )
+
         with col_cancel:
-            if st.form_submit_button("❌ Cancelar", use_container_width=True):
+            if st.form_submit_button(
+                "❌ Cancelar",
+                use_container_width=True
+            ):
                 _limpar_sessao()
                 st.rerun()
 

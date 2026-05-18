@@ -239,7 +239,7 @@ def _interface_edicao_colaborador(service: ColaboradoresService, user_id: int, u
             nome = safe_text_input("Nome Completo*", value=user_data['nome'], max_chars=100)
             email = safe_text_input("Email*", value=user_data['email'], max_chars=100)
             setor = safe_selectbox("Setor*", SETORES, index=SETORES.index(user_data['setor']) if user_data['setor'] in SETORES else 0)
-            
+            admissao = safe_text_input("admissao")
         with col2:
             funcao = safe_selectbox("Função*", FUNCOES, index=FUNCOES.index(user_data['funcao']) if user_data['funcao'] in FUNCOES else 0)
             nivel_acesso = safe_selectbox("Nível de Acesso", 
@@ -256,18 +256,18 @@ def _interface_edicao_colaborador(service: ColaboradoresService, user_id: int, u
             excluir = st.form_submit_button("Excluir Colaborador", type="secondary")
         
         if submitted:
-            _processar_edicao(service, user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias)
+            _processar_edicao(service, user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias, admissao)
         
         if excluir:
             _processar_exclusao(service, user_id, user_data['nome'])
 
 
 def _processar_edicao(service: ColaboradoresService, user_id: int, nome: str, email: str,
-                     setor: str, funcao: str, nivel_acesso: str, saldo_ferias: int):
+                     setor: str, funcao: str, nivel_acesso: str, saldo_ferias: int, admissao: str):
     """
     Processa edição usando o serviço.
     """
-    resultado = service.atualizar_colaborador(user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias)
+    resultado = service.atualizar_colaborador(user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias, admissao)
     
     if resultado["sucesso"]:
         st.success(f"✅ {resultado['mensagem']}")
