@@ -77,35 +77,12 @@ def _mostrar_metricas_gerais():
         # Gráficos por setor
         if setor_selecionado == 'Todos':
             st.markdown("----")
-            st.markdown("##### Distribuição por Setor")
-            
-            # Criar estatísticas para todos os setores das constantes
-            from ..utils.constants import SETORES
-            setor_data = []
-            
-            for setor in SETORES:
-                setor_users = users_df[users_df['setor'] == setor]
-                if not setor_users.empty:
-                    colaboradores = len(setor_users)
-                    saldo_medio = setor_users['saldo_ferias'].mean()
-                    saldo_total = setor_users['saldo_ferias'].sum()
-                else:
-                    colaboradores = 0
-                    saldo_medio = 0.0
-                    saldo_total = 0
-                
-                setor_data.append({
-                    'Setor': setor,
-                    'Colaboradores': colaboradores,
-                    'Saldo Médio': round(saldo_medio, 1),
-                    'Saldo Total': saldo_total
-                })
-            
+                        
             setor_stats_df = pd.DataFrame(setor_data)
             
             st.dataframe(setor_stats_df, use_container_width=True, hide_index=True)
 
-            st.markdown("##### Relatório detalhado por hierarquia")
+            st.markdown("##### Distribuição por Setor")
 
             colunas_detalhadas = [
                 'nivel_acesso',
