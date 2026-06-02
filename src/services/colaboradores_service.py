@@ -311,7 +311,8 @@ class ColaboradoresService:
                 setor=setor,
                 funcao=funcao,
                 nivel_acesso=nivel_acesso,
-                saldo_ferias=validacao_saldo["saldo_corrigido"]
+                saldo_ferias=validacao_saldo["saldo_corrigido"],
+                data_admissao=admissao
             )
             
             if resultado:

@@ -127,9 +127,18 @@ class DatabaseManager(BaseConnection):
     def create_user(self, nome, email, senha, setor, funcao, nivel_acesso="colaborador", saldo_ferias=12, data_admissao=None):
         return self.users.create_user(nome, email, senha, setor, funcao, nivel_acesso, saldo_ferias, data_admissao)
     
-    def update_user(self, user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias):
-        return self.users.update_user(user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias)
-    
+    def update_user(self, user_id, nome, email, setor, funcao, nivel_acesso, saldo_ferias, data_admissao=None):
+        return self.users.update_user(
+            user_id,
+            nome,
+            email,
+            setor,
+            funcao,
+            nivel_acesso,
+            saldo_ferias,
+            data_admissao
+        )
+           
     def inativar_usuario(self, user_id):
         return self.users.inativar_usuario(user_id)
     

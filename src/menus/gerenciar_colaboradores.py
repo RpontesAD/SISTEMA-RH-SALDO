@@ -221,7 +221,7 @@ def _formulario_edicao(user_data):
         # =========================
         # TRATAMENTO DA DATA
         # =========================
-        admissao_atual = user_data.get("admissao")
+        admissao_atual = user_data.get("data_admissao")
 
         try:
             if isinstance(admissao_atual, str):
