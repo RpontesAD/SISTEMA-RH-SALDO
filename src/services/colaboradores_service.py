@@ -7,6 +7,7 @@ Esta camada separa a lógica de negócio da interface para operações de colabo
 from typing import Dict, Any
 from datetime import date
 from ..core.regras_saldo import RegrasSaldo
+from ..database.users import UsersDatabase
 from ..utils.validators import validar_email, validar_senha, validar_nome
 from ..utils.constants import DIAS_FERIAS_PADRAO
 from ..utils.code_standards import (
@@ -26,15 +27,27 @@ class ColaboradoresService:
     - Aplicar regras de negócio
     """
     
-    def __init__(self, users_db):
+    def __init__(self, users_db=None):
         """
         Inicializa o serviço.
         
         Args:
             users_db: Instância do UserManager
         """
-        self.users_db = users_db
-    
+        self.users_db = users_db or UsersDatabase()
+
+    def listar_colaboradores(self):
+        """Compatibilidade com a interface antiga de listagem."""
+        resultado = self.obter_colaboradores()
+        colaboradores = resultado.get("colaboradores", []) if resultado.get("sucesso", False) else []
+        if hasattr(colaboradores, 'to_dict'):
+            return colaboradores.to_dict(orient='records')
+        return colaboradores
+
+    def atualizar_saldo(self, user_id: int, novo_saldo: int):
+        """Compatibilidade com interface antiga de atualização de saldo."""
+        return self.atualizar_saldo_colaborador(user_id, novo_saldo)
+
     def validar_dados_colaborador(self, nome: str, email: str, senha: str, 
                                  setor: str, funcao: str, saldo_ferias: int = 12) -> Dict[str, Any]:
         """
@@ -108,14 +121,14 @@ class ColaboradoresService:
         }
     
     @documentar_operacao("cadastrar_colaborador", "Cadastro de novo colaborador")
-    def cadastrar_colaborador(self, nome: str, email: str, senha: str, setor: str, 
-                             funcao: str, nivel_acesso: str = "colaborador", saldo_ferias: int = None, 
+    def cadastrar_colaborador(self, nome: str, email: str = None, senha: str = None, setor: str = None, 
+                             funcao: str = None, nivel_acesso: str = "colaborador", saldo_ferias: int = None, 
                              data_admissao: date = None) -> Dict[str, Any]:
         """
         Cadastra novo colaborador após validações.
         
         Args:
-            nome: Nome do colaborador
+            nome: Nome do colaborador ou dicionário com dados do colaborador
             email: Email do colaborador
             senha: Senha do colaborador
             setor: Setor do colaborador
@@ -126,12 +139,33 @@ class ColaboradoresService:
         Returns:
             Dict com resultado da operação
         """
+        if isinstance(nome, dict):
+            dados = nome
+            return self.cadastrar_colaborador(
+                dados.get("nome"),
+                dados.get("email"),
+                dados.get("senha", "senha123"),
+                dados.get("setor", "TI"),
+                dados.get("funcao", "Analista"),
+                dados.get("nivel_acesso", "colaborador"),
+                dados.get("saldo_ferias", DIAS_FERIAS_PADRAO),
+                dados.get("data_admissao")
+            )
+
+        if email is None or senha is None or setor is None or funcao is None:
+            return {
+                "sucesso": False,
+                "erro": "Parâmetros insuficientes para cadastro de colaborador",
+                "campo": "parametros"
+            }
+
         # Validar dados
         validacao = self.validar_dados_colaborador(nome, email, senha, setor, funcao, saldo_ferias)
         
         if not validacao["valido"]:
             return {
                 "sucesso": False,
+                "mensagem": validacao.get("erro", "Dados inválidos"),
                 "erro": validacao["erro"],
                 "campo": validacao["campo"],
                 "saldo_corrigido": validacao.get("saldo_corrigido")
@@ -162,6 +196,7 @@ class ColaboradoresService:
             else:
                 return {
                     "sucesso": False,
+                    "mensagem": "Email já existe ou ocorreu um erro interno",
                     "erro": "Email já está em uso ou erro interno",
                     "campo": "email"
                 }
@@ -169,6 +204,7 @@ class ColaboradoresService:
         except Exception as e:
             return {
                 "sucesso": False,
+                "mensagem": f"Erro interno: {str(e)}",
                 "erro": f"Erro interno: {str(e)}",
                 "campo": "sistema"
             }
@@ -347,6 +383,7 @@ class ColaboradoresService:
         if not validacao["valido"]:
             return {
                 "sucesso": False,
+                "mensagem": f"Saldo inválido: {validacao['mensagem']}",
                 "erro": validacao["mensagem"],
                 "saldo_corrigido": validacao["saldo_corrigido"]
             }
@@ -361,18 +398,20 @@ class ColaboradoresService:
             if resultado:
                 return {
                     "sucesso": True,
-                    "mensagem": f"Saldo atualizado para {validacao['saldo_corrigido']} dias",
+                    "mensagem": f"Saldo atualizado com sucesso para {validacao['saldo_corrigido']} dias",
                     "saldo_final": validacao["saldo_corrigido"]
                 }
             else:
                 return {
                     "sucesso": False,
+                    "mensagem": "Erro ao atualizar saldo",
                     "erro": "Erro ao atualizar saldo"
                 }
                 
         except Exception as e:
             return {
                 "sucesso": False,
+                "mensagem": f"Erro interno: {str(e)}",
                 "erro": f"Erro interno: {str(e)}"
             }
     

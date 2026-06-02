@@ -9,8 +9,8 @@ import os
 # Adicionar src ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from services.colaboradores_service import ColaboradoresService
-from database.connection import get_connection
+from src.services.colaboradores_service import ColaboradoresService
+from src.database.connection import get_connection
 
 
 class TestColaboradoresServiceIntegration(unittest.TestCase):

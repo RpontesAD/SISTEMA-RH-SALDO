@@ -41,7 +41,7 @@ class RegrasSaldo:
                 "valido": False,
                 "motivo": "saldo_acima_maximo", 
                 "saldo_corrigido": SALDO_MAXIMO,
-                "mensagem": f"Saldo acima do máximo ({SALDO_MAXIMO})"
+                "mensagem": f"Saldo acima do limite máximo ({SALDO_MAXIMO})"
             }
         
         return {

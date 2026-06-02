@@ -8,6 +8,7 @@ sem dependências de interface ou banco de dados.
 from datetime import date, timedelta
 from typing import Dict, Any, Tuple, Optional
 from ..utils.constants import DIAS_ANTECEDENCIA_MINIMA, SALDO_MAXIMO, DIAS_FERIAS_PADRAO, SALDO_MINIMO
+from ..utils.calculos import calcular_dias_uteis
 
 
 class RegrasFerias:
@@ -74,7 +75,7 @@ class RegrasFerias:
                 "mensagem": "Data de fim deve ser posterior à data de início"
             }
         
-        dias_totais = (data_fim - data_inicio).days + 1
+        dias_totais = calcular_dias_uteis(data_inicio, data_fim)
         
         if dias_totais > SALDO_MAXIMO:
             return {

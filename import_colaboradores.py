@@ -12,7 +12,8 @@ from datetime import date
 # Adicionar src ao path
 sys.path.append(str(Path(__file__).parent / "src"))
 
-from database.simple_psycopg2 import SimplePsycopg2
+from database import DatabaseManager
+db = DatabaseManager()
 
 def main():
     """Importa colaboradores da planilha Excel"""

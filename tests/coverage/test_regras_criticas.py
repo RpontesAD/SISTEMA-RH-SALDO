@@ -9,8 +9,8 @@ import os
 # Adicionar src ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from core.regras_ferias import RegrasFerias
-from core.regras_saldo import RegrasSaldo
+from src.core.regras_ferias import RegrasFerias
+from src.core.regras_saldo import RegrasSaldo
 
 
 class TestRegrasCriticas(unittest.TestCase):
@@ -64,7 +64,7 @@ class TestRegrasCriticas(unittest.TestCase):
     
     def test_saldo_acima_limite_maximo(self):
         """Teste crítico: saldo acima do limite máximo"""
-        resultado = self.regras_saldo.validar_saldo_dentro_limites(13)
+        resultado = self.regras_saldo.validar_saldo_dentro_limites(31)
         self.assertFalse(resultado['valido'])
     
     def test_saldo_zero(self):
@@ -131,7 +131,7 @@ class TestRegrasCriticas(unittest.TestCase):
         """Teste crítico: múltiplas violações simultâneas"""
         # Antecedência insuficiente + período longo + saldo insuficiente
         data_inicio = date.today() + timedelta(days=15)  # < 30 dias
-        data_fim = data_inicio + timedelta(days=35)  # > 30 dias
+        data_fim = data_inicio + timedelta(days=45)  # período longo acima de 30 dias úteis
         dias_solicitados = 15  # > saldo
         saldo_atual = 10
         

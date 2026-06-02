@@ -8,10 +8,11 @@ SALDO_MAXIMO = 30
 DIAS_FERIAS_PADRAO = 12
 
 # Antecedência
-DIAS_ANTECEDENCIA_MINIMA = 7
+DIAS_ANTECEDENCIA_MINIMA = 30
 
 # Setores
 SETORES = [
+    "RH",
     "ADMINISTRAÇÃO",
     "ASSISTÊNCIA TÉCNICA",
     "GESTÃO DE PESSOAS",
@@ -30,6 +31,7 @@ SETORES = [
 
 # Funções
 FUNCOES = [
+    "RH",
     "Analista",
     "Analista Administrativo",
     "Analista de Dados",

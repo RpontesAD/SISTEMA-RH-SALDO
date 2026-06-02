@@ -9,8 +9,8 @@ import os
 # Adicionar src ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from services.ferias_service import FeriasService
-from database.connection import get_connection
+from src.services.ferias_service import FeriasService
+from src.database.connection import get_connection
 
 
 class TestFeriasServiceIntegration(unittest.TestCase):
@@ -73,7 +73,7 @@ class TestFeriasServiceIntegration(unittest.TestCase):
     def test_solicitar_ferias_saldo_insuficiente(self):
         """Teste de integração para solicitação com saldo insuficiente"""
         data_inicio = date.today() + timedelta(days=45)
-        data_fim = data_inicio + timedelta(days=34)
+        data_fim = data_inicio + timedelta(days=29)
         
         resultado = self.service.solicitar_ferias(
             user_id=1,
@@ -87,7 +87,7 @@ class TestFeriasServiceIntegration(unittest.TestCase):
     
     def test_solicitar_ferias_antecedencia_insuficiente(self):
         """Teste de integração para solicitação com antecedência insuficiente"""
-         data_inicio = date.today() + timedelta(days=15)  # Menos de 30 dias
+        data_inicio = date.today() + timedelta(days=15)  # Menos de 30 dias
         data_fim = data_inicio + timedelta(days=9)
         
         resultado = self.service.solicitar_ferias(

@@ -13,6 +13,7 @@ def test_ferias_operations():
     
     db_conn = DatabaseConnection()
     db_conn.init_database()
+    db = db_conn
     users_db = UsersDatabase()
     ferias_db = FeriasDatabase()
     

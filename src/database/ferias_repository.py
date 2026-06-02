@@ -11,7 +11,7 @@ class FeriasRepository(BaseConnection):
         """Adiciona férias"""
         try:
             # Calcular apenas dias úteis (sem fins de semana)
-            from ..utils.calculos import calcular_dias_uteis
+            from utils.calculos import calcular_dias_uteis
             dias_utilizados = calcular_dias_uteis(data_inicio, data_fim)
             
             with psycopg2.connect(self.conn_str) as conn:

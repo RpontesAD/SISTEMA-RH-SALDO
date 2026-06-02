@@ -9,6 +9,8 @@ from typing import Dict, Any, Tuple
 from datetime import date
 from ..core.regras_ferias import RegrasFerias
 from ..core.regras_saldo import RegrasSaldo
+from ..database.ferias import FeriasDatabase
+from ..database.users import UsersDatabase
 from ..utils.calculos import calcular_dias_uteis
 from ..utils.error_handler import handle_critical_operation, DatabaseError, ValidationError, log_operation
 
@@ -24,7 +26,7 @@ class FeriasService:
     - Não contém lógica de interface (sem Streamlit)
     """
     
-    def __init__(self, ferias_db, users_db):
+    def __init__(self, ferias_db=None, users_db=None):
         """
         Inicializa o serviço com dependências.
         
@@ -32,11 +34,33 @@ class FeriasService:
             ferias_db: Instância do FeriasManager
             users_db: Instância do UserManager
         """
-        self.ferias_db = ferias_db
-        self.users_db = users_db
+        self.ferias_db = ferias_db or FeriasDatabase()
+        self.users_db = users_db or UsersDatabase()
+
+    def solicitar_ferias(self, usuario_id: int = None, user_id: int = None, data_inicio: date = None, data_fim: date = None,
+                         dias_solicitados: int = None, status: str = "Aprovada", usuario_nivel: str = "colaborador") -> Dict[str, Any]:
+        """Compatibilidade com a interface antiga de solicitação de férias."""
+        if usuario_id is None:
+            usuario_id = user_id
+
+        return self.cadastrar_ferias(usuario_id, data_inicio, data_fim, status, usuario_nivel, dias_solicitados)
+
+    def listar_ferias_usuario(self, usuario_id: int):
+        """Compatibilidade com a interface antiga de listagem de férias."""
+        ferias = self.ferias_db.get_ferias_usuario(usuario_id)
+        if hasattr(ferias, 'to_dict'):
+            registros = ferias.to_dict(orient='records')
+        else:
+            registros = ferias
+
+        if isinstance(registros, list):
+            for registro in registros:
+                if 'usuario_id' in registro and 'user_id' not in registro:
+                    registro['user_id'] = registro['usuario_id']
+        return registros
     
     def validar_cadastro_ferias(self, usuario_id: int, data_inicio: date, data_fim: date, 
-                               status: str, usuario_nivel: str) -> Dict[str, Any]:
+                               status: str, usuario_nivel: str, dias_solicitados: int = None) -> Dict[str, Any]:
         """
         Valida todos os aspectos do cadastro de férias.
         
@@ -96,8 +120,9 @@ class FeriasService:
                     
                 user_data = users_df[users_df["id"] == usuario_id].iloc[0]
                 saldo_atual = user_data["saldo_ferias"]
+                dias_avaliados = dias_solicitados if dias_solicitados is not None else dias_uteis
                 
-                validacao_saldo = RegrasFerias.validar_saldo_suficiente(saldo_atual, dias_uteis, status)
+                validacao_saldo = RegrasFerias.validar_saldo_suficiente(saldo_atual, dias_avaliados, status)
                 if not validacao_saldo["valida"]:
                     return {
                         "valido": False,
@@ -105,7 +130,7 @@ class FeriasService:
                         "tipo": "saldo",
                         "detalhes": {
                             "saldo_atual": saldo_atual,
-                            "dias_solicitados": dias_uteis
+                            "dias_solicitados": dias_avaliados
                         }
                     }
             except Exception as e:
@@ -123,7 +148,7 @@ class FeriasService:
         }
     
     def cadastrar_ferias(self, usuario_id: int, data_inicio: date, data_fim: date,
-                        status: str, usuario_nivel: str) -> Dict[str, Any]:
+                        status: str, usuario_nivel: str, dias_solicitados: int = None) -> Dict[str, Any]:
         """
         Cadastra férias após validações.
         
@@ -138,14 +163,12 @@ class FeriasService:
             Dict com resultado da operação
         """
         # Validar antes de cadastrar
-        validacao = self.validar_cadastro_ferias(usuario_id, data_inicio, data_fim, status, usuario_nivel)
+        validacao = self.validar_cadastro_ferias(usuario_id, data_inicio, data_fim, status, usuario_nivel, dias_solicitados)
         
         if not validacao["valido"]:
             return {
                 "sucesso": False,
-                "erro": validacao["erro"],
-                "tipo": validacao["tipo"],
-                "detalhes": validacao.get("detalhes")
+                "mensagem": validacao.get("erro", "Erro na validação das férias"),
             }
         
         # Cadastrar no banco
@@ -164,7 +187,7 @@ class FeriasService:
             if sucesso:
                 return {
                     "sucesso": True,
-                    "mensagem": "Férias cadastradas com sucesso",
+                    "mensagem": "Férias solicitadas com sucesso",
                     "dias_uteis": validacao["dias_uteis"]
                 }
             else:

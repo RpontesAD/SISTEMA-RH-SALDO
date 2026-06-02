@@ -9,7 +9,7 @@ import os
 # Adicionar src ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from core.regras_ferias import RegrasFerias
+from src.core.regras_ferias import RegrasFerias
 
 
 class TestRegrasFerias(unittest.TestCase):
@@ -76,7 +76,7 @@ class TestRegrasFerias(unittest.TestCase):
         """Teste para validação completa de férias inválidas"""
         from datetime import timedelta
         data_inicio = date.today() + timedelta(days=15)  # Antecedência insuficiente
-        data_fim = data_inicio + timedelta(days=35)  # Período muito longo
+        data_fim = data_inicio + timedelta(days=45)  # Período muito longo
         dias_solicitados = 15  # Mais dias que o saldo
         saldo_atual = 10
         

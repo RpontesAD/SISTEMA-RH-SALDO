@@ -9,7 +9,7 @@ import os
 # Adicionar src ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from core.regras_saldo import RegrasSaldo
+from src.core.regras_saldo import RegrasSaldo
 
 
 class TestRegrasSaldo(unittest.TestCase):
@@ -24,7 +24,7 @@ class TestRegrasSaldo(unittest.TestCase):
     
     def test_validar_saldo_acima_limite(self):
         """Teste para saldo acima do limite máximo"""
-        resultado = self.regras.validar_saldo_dentro_limites(15)
+        resultado = self.regras.validar_saldo_dentro_limites(31)
         self.assertFalse(resultado['valido'])
     
     def test_validar_saldo_zero(self):

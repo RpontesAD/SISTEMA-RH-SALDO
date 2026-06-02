@@ -12,8 +12,9 @@ def test_crud_users():
     
     db_conn = DatabaseConnection()
     db_conn.init_database()
-    users_db = UsersDatabase()
-    ferias_db = FeriasDatabase()
+    db = db_conn
+    users_db = db
+    ferias_db = db
     
     # Teste 1: Criar usuário
     print("\n1. Testando criação de usuário...")
