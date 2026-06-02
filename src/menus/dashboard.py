@@ -102,8 +102,43 @@ def _mostrar_metricas_gerais():
                 })
             
             setor_stats_df = pd.DataFrame(setor_data)
-            st.dataframe(setor_stats_df, use_container_width=True, hide_index=True)
             
+            st.dataframe(setor_stats_df, use_container_width=True, hide_index=True)
+
+            st.markdown("##### Relatório detalhado por hierarquia")
+
+            colunas_detalhadas = [
+                'nivel_acesso',
+                'setor',
+                'nome',
+                'funcao',
+                'saldo_ferias',
+                'data_admissao'
+            ]
+
+            colunas_existentes = [col for col in colunas_detalhadas if col in users_df.columns]
+
+            relatorio_hierarquia = users_df[colunas_existentes].copy()
+
+            if 'data_admissao' in relatorio_hierarquia.columns:
+                relatorio_hierarquia['data_admissao'] = relatorio_hierarquia['data_admissao'].apply(
+                lambda x: x.strftime('%d/%m/%Y') if hasattr(x, 'strftime') else str(x)
+                )
+
+            relatorio_hierarquia = relatorio_hierarquia.rename(columns={
+                'nivel_acesso': 'Hierarquia',
+                'setor': 'Setor',
+                'nome': 'Colaborador',
+                'funcao': 'Função',
+                'saldo_ferias': 'Saldo de Férias',
+                'data_admissao': 'Admissão'
+            })
+
+            st.dataframe(
+                relatorio_hierarquia.sort_values(by=['Hierarquia', 'Setor', 'Colaborador']),
+                use_container_width=True,
+                hide_index=True
+            )
 
         else:
             st.markdown(f"##### Detalhes do Setor: {setor_selecionado}")
