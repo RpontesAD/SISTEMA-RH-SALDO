@@ -64,7 +64,6 @@ def _mostrar_metricas_gerais():
             "nome",
             "setor",
             "funcao",
-            "nivel_acesso",
             "saldo_ferias",
             "data_admissao",
         ]
@@ -119,7 +118,6 @@ def _mostrar_metricas_gerais():
             relatorio = users_df[
                 [
                     "setor",
-                    "nivel_acesso",
                     "nome",
                     "funcao",
                     "saldo_ferias",
@@ -134,7 +132,6 @@ def _mostrar_metricas_gerais():
             relatorio = relatorio.rename(
                 columns={
                     "setor": "Setor",
-                    "nivel_acesso": "Hierarquia",
                     "nome": "Colaborador",
                     "funcao": "Função",
                     "saldo_ferias": "Saldo de Férias",
@@ -143,7 +140,7 @@ def _mostrar_metricas_gerais():
             )
 
             relatorio = relatorio.sort_values(
-                by=["Setor", "Hierarquia", "Colaborador"],
+                by=["Setor", "Colaborador"],
                 na_position="last"
             )
 
@@ -164,7 +161,6 @@ def _mostrar_metricas_gerais():
 
             relatorio = users_filtered[
                 [
-                    "nivel_acesso",
                     "nome",
                     "funcao",
                     "saldo_ferias",
@@ -178,7 +174,6 @@ def _mostrar_metricas_gerais():
 
             relatorio = relatorio.rename(
                 columns={
-                    "nivel_acesso": "Hierarquia",
                     "nome": "Colaborador",
                     "funcao": "Função",
                     "saldo_ferias": "Saldo de Férias",
@@ -187,7 +182,7 @@ def _mostrar_metricas_gerais():
             )
 
             relatorio = relatorio.sort_values(
-                by=["Hierarquia", "Colaborador"],
+                by=["Colaborador"],
                 na_position="last"
             )
 
